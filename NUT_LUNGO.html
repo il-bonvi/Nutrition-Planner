@@ -344,6 +344,49 @@ body {
 ::-webkit-scrollbar-thumb { background:var(--surface3); border-radius:3px; }
 ::-webkit-scrollbar-thumb:hover { background:var(--accent); }
 
+/* ── MODAL DIALOG ── */
+.modal-overlay {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999;
+  align-items:center; justify-content:center;
+}
+.modal-overlay.active { display:flex; animation:fadeIn .2s ease; }
+.modal-dialog {
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:28px; max-width:480px; width:90%; box-shadow:0 16px 48px rgba(0,0,0,.4);
+  animation: scaleIn .25s cubic-bezier(.22,1,.36,1);
+}
+.modal-dialog h3 {
+  font-size:1.2rem; font-weight:700; margin-bottom:12px; color:var(--text);
+}
+.modal-dialog p {
+  font-size:0.85rem; color:var(--text-muted); margin-bottom:14px; line-height:1.5;
+}
+.modal-dialog .osm-table {
+  width:100%; border-collapse:collapse; margin:16px 0; font-size:0.8rem;
+  background:var(--surface2); border-radius:8px; overflow:hidden;
+}
+.modal-dialog .osm-table th,
+.modal-dialog .osm-table td {
+  padding:10px 12px; text-align:center; border-bottom:1px solid var(--border);
+}
+.modal-dialog .osm-table th {
+  background:var(--surface3); font-weight:600; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:1px; font-size:0.7rem;
+}
+.modal-dialog .osm-table tr:last-child td { border-bottom:none; }
+.modal-dialog .osm-table .label { text-align:left; color:var(--text); font-weight:500; }
+.modal-dialog .osm-table .value { font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--accent5); }
+.modal-dialog .osm-table .note { font-size:0.7rem; color:var(--text-muted); font-style:italic; }
+.modal-buttons {
+  display:flex; gap:12px; justify-content:flex-end; margin-top:20px;
+}
+.modal-btn {
+  padding:9px 20px; border-radius:8px; font-size:0.85rem; font-weight:600;
+  cursor:pointer; transition:.2s; border:none; font-family:'Outfit',sans-serif;
+}
+.modal-btn-close { background:var(--surface2); color:var(--text); }
+.modal-btn-close:hover { background:var(--surface3); }
+
 /* ── SEGMENT PROGRESS BAR ── */
 .seg-progress { display:flex; height:6px; border-radius:3px; overflow:hidden; margin:12px 0 4px; background:var(--surface2); }
 .seg-progress span { transition: width .4s ease; }
@@ -454,12 +497,138 @@ body {
     <div class="chart-box"><h4>Velocità per Tratto</h4><div class="echarts-container" id="chartSpeed"></div></div>
     <div class="chart-box"><h4>Carboidrati: Piano vs Calcolato</h4><div class="echarts-container" id="chartCarbs"></div></div>
     <div class="chart-box"><h4>Consumo Borraccia per Tratto</h4><div class="echarts-container" id="chartBottle"></div></div>
-    <div class="chart-box"><h4>Profilo Temporale della Gara</h4><div class="echarts-container" id="chartTime"></div></div>
+    <div class="chart-box"><h4>Profilo Temporale</h4><div class="echarts-container" id="chartTime"></div></div>
   </div>
   <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
 </div><!-- /wrapper -->
+
+<!-- OSM INFO MODAL -->
+<div class="modal-overlay" id="osmModal">
+  <div class="modal-dialog">
+    <h3>📊 Osmolarità Suggerita</h3>
+    <p>Scegli un livello di osmolarità in base al tuo comfort gastrointestinale e alla tolleranza.</p>
+    
+    <table class="osm-table">
+      <thead>
+        <tr>
+          <th>Livello</th>
+          <th>Osm %</th>
+          <th>Gr CHO<br/>(950ml)</th>
+          <th>Caratteristica</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="label">🟢 Leggera</td>
+          <td class="value">4%</td>
+          <td class="value">38 g</td>
+          <td class="note">Meno concentrata, più tollerabile</td>
+        </tr>
+        <tr>
+          <td class="label">🟡 Standard</td>
+          <td class="value">6%</td>
+          <td class="value">57 g</td>
+          <td class="note">Bilanciata, consigliata</td>
+        </tr>
+        <tr>
+          <td class="label">🔴 Forte</td>
+          <td class="value">8%</td>
+          <td class="value">76 g</td>
+          <td class="note">Più concentrata, ottima assimilazione</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:0.8rem; color:var(--accent5); margin-top:16px; padding:10px; background:rgba(245,158,11,.1); border-radius:6px;">
+      <strong>💡 Consiglio:</strong> Inizia con 6% e regola in base alla tolleranza durante l'allenamento.
+    </p>
+
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-close" onclick="closeOsmDialog()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="choModal">
+  <div class="modal-dialog">
+    <h3>🥤 CHO % nei Carboidrati</h3>
+    <p>Percentuale di carboidrati effettivi nei prodotti che utilizzi (sciroppi, succhi, malto ecc.).</p>
+    
+    <div style="margin:20px 0; padding:16px; background:var(--surface); border-radius:10px; border:1px solid var(--border);">
+      <h4 style="margin:0 0 12px 0; color:var(--accent);">📊 Esempi Comuni</h4>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:0.85rem;">
+        <div><strong>Malto:</strong> 90-99% (100% ok...)%</div>
+        <div><strong>Sciroppo:</strong> 70-90%</div>
+      </div>
+    </div>
+
+    <p style="font-size:0.8rem; color:var(--accent5); margin-top:16px; padding:10px; background:rgba(245,158,11,.1); border-radius:6px;">
+      <strong>💡 Importante:</strong> Controlla sempre l'etichetta nutrizionale del prodotto per il valore esatto di carboidrati per 100g.
+    </p>
+
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-close" onclick="closeChoDialog()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="carbModal">
+  <div class="modal-dialog">
+    <h3>⚡ Rapporto Ottimale Carboidrati/h</h3>
+    <p>Per assorbire efficientemente i carboidrati, il rapporto tra glucosio e fruttosio è fondamentale.</p>
+    
+    <div style="margin:20px 0; padding:16px; background:var(--surface); border-radius:10px; border:1px solid var(--border);">
+      <h4 style="margin:0 0 12px 0; color:var(--accent);">📈 Linee Guida</h4>
+      <div style="display:grid; gap:12px; font-size:0.85rem;">
+        <div><strong>Fino a 60 gr/h:</strong> Solo glucosio (100%)</div>
+        <div><strong>70 gr/h:</strong> Glucosio 60g + Fruttosio 10g</div>
+        <div><strong>80 gr/h:</strong> Glucosio 60g + Fruttosio 20g</div>
+        <div><strong>90 gr/h:</strong> Glucosio 60g + Fruttosio 30g</div>
+        <div><strong>100 gr/h:</strong> Glucosio 60g + Fruttosio 40g</div>
+        <div><strong>120 gr/h:</strong> Glucosio 60g + Fruttosio 60g</div>
+      </div>
+    </div>
+
+    <div id="carbReminder" style="margin:16px 0; padding:12px; background:rgba(0,229,255,0.1); border:1px solid var(--accent); border-radius:6px; color:var(--text);">
+    </div>
+
+    <p style="font-size:0.8rem; color:var(--accent5); margin-top:16px; padding:10px; background:rgba(245,158,11,.1); border-radius:6px;">
+      <strong>💡 Consiglio:</strong> Oltre i 60 gr/h, aggiungi fruttosio per migliorare l'assorbimento intestinale.
+    </p>
+
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-close" onclick="closeCarbDialog()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="choBottleModal">
+  <div class="modal-dialog">
+    <h3>🥤 CHO per Borraccia</h3>
+    <p>Qui inserisci i grammi di carboidrati decisi da inserire nella borraccia, sulla base della osmolarità preferita.</p>
+    
+    <div style="margin:20px 0; padding:16px; background:var(--surface); border-radius:10px; border:1px solid var(--border);">
+      <h4 style="margin:0 0 12px 0; color:var(--accent);">⚠️ Campo Cruciale</h4>
+      <div style="display:grid; gap:12px; font-size:0.85rem;">
+        <div>• <strong>NON opzionale:</strong> Questo valore determina tutti i calcoli nelle tab seguenti</div>
+        <div>• <strong>Carboidrati per borraccia:</strong> Grammi che manterrai nella borraccia per tutto l'allenamento</div>
+        <div>• <strong>Calcolo osmolarità:</strong> Verrà calcolata automaticamente (grammi / volume × 100)</div>
+        <div>• <strong>Distribuzione rimanenti:</strong> I CHO liquidi restanti verranno distribuiti nelle altre borracce</div>
+        <div>• <strong>Decisione strategica:</strong> Scegli un valore realistico e sostenibile per la tua performance</div>
+      </div>
+    </div>
+
+    <p style="font-size:0.8rem; color:var(--accent5); margin-top:16px; padding:10px; background:rgba(245,158,11,.1); border-radius:6px;">
+      <strong>⚠️ Importante:</strong> Questo valore è fondamentale per tutti i calcoli successivi. Scegli con attenzione un quantitativo sostenibile per il tuo allenamento/gara.
+    </p>
+
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-close" onclick="closeChoBottleDialog()">Chiudi</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════════════════
@@ -469,23 +638,24 @@ body {
 // ── CONFIG (editable globals) ──
 const cfg = {
   carbPerHour: 80,       // R15 — carbo/h target
-  planFluid: 500,        // S15 — plan fluid ml
   bottleVol: 950,        // S20 — borraccia ml
   osmGr: 120,            // U18 — gr osmolarità borraccia easy
   siroSugar: 93,         // S23 — sciroppo sugar %
+  targetOsm: 6,          // Target osmolarità % per borraccia 1 (4-8%)
+  choPerBottle: 0,       // Inserisci grammi CHO manuali per borraccia (opzionale)
 };
 
 // ── SEGMENTS (input data) ──
-// Each: { name, km, h, min, carbo, integrazione, carboInt, malto, consum }
+// Each: { name, km, h, min, carbo (planned), carboInt (CHO ing), malto (CHO borraccia), consum, foodItems[] }
 let segments = [
-  { name:'Molina',    km:45,  h:2, min:0,  carbo:160, integrazione:'barretta 30', carboInt:80,  malto:80,  consum:0.7 },
-  { name:'Vic',       km:80,  h:1, min:20, carbo:110, integrazione:'gel 45',      carboInt:30,  malto:70,  consum:null },
-  { name:'Canazei',   km:90,  h:0, min:25, carbo:40,  integrazione:'panini 40',   carboInt:60,  malto:25,  consum:0.8 },
-  { name:'Fedaia',    km:100, h:0, min:55, carbo:80,  integrazione:'caramelle 45',carboInt:60,  malto:50,  consum:null },
-  { name:'Agordino',  km:130, h:0, min:50, carbo:80,  integrazione:'',            carboInt:45,  malto:40,  consum:0.7 },
-  { name:'Valles',    km:150, h:1, min:30, carbo:110, integrazione:'gelato 30',   carboInt:30,  malto:70,  consum:null },
-  { name:'Cavalese',  km:185, h:1, min:0,  carbo:80,  integrazione:'gel 20',      carboInt:60,  malto:50,  consum:1.0 },
-  { name:'Casa',      km:230, h:2, min:0,  carbo:160, integrazione:'',            carboInt:0,   malto:100, consum:null },
+  { name:'Molina',    km:45,  h:2, min:0,  carbo:null, carboInt:0, malto:0, consum:0.7,  foodItems:[] },
+  { name:'Vic',       km:80,  h:1, min:20, carbo:null, carboInt:0, malto:0, consum:null, foodItems:[] },
+  { name:'Canazei',   km:90,  h:0, min:25, carbo:null, carboInt:0, malto:0, consum:0.8,  foodItems:[] },
+  { name:'Fedaia',    km:100, h:0, min:55, carbo:null, carboInt:0, malto:0, consum:null, foodItems:[] },
+  { name:'Agordino',  km:130, h:0, min:50, carbo:null, carboInt:0, malto:0, consum:0.7,  foodItems:[] },
+  { name:'Valles',    km:150, h:1, min:30, carbo:null, carboInt:0, malto:0, consum:null, foodItems:[] },
+  { name:'Cavalese',  km:185, h:1, min:0,  carbo:null, carboInt:0, malto:0, consum:1.0,  foodItems:[] },
+  { name:'Casa',      km:230, h:2, min:0,  carbo:null, carboInt:0, malto:0, consum:null, foodItems:[] },
 ];
 
 // ── FOODS (input data) ──
@@ -499,17 +669,22 @@ let computed = [];
 let debounceTimer = null;
 
 function recalc() {
-  const hyperGr = cfg.bottleVol - cfg.osmGr;       // S18 = 950-120 = 830… wait, original: S18=S15-120=380
-  // Original: S18 = S15 - 120 = 500-120 = 380 (gr iper = water portion weight in the hyper mix ratio)
-  // S19 = 120 / S18 = 120/380 (ratio malto/water for dosing)
-  const grIper   = cfg.planFluid - cfg.osmGr;      // 380
-  const pctIper  = cfg.osmGr / grIper;             // 0.3158
-  const osmPct   = cfg.osmGr / cfg.bottleVol;      // 0.1263
+  // gr iper: acqua disponibile per la miscela iper (pochè non usiamo più 'planFluid')
+  const grIper   = cfg.bottleVol - cfg.osmGr;      // ex: 950 - 120 = 830
+  const pctIper  = cfg.osmGr / grIper;             // rapporto malto/acqua
+  const osmPct   = cfg.osmGr / cfg.bottleVol;      // percentuale osm rispetto al volume della borraccia (g/ml) in unità adimensionale
 
   computed = [];
   let cumMin = 0, cumTime = 0, cumMalto = 0, cumIper = 0, cumBor = 0;
 
   segments.forEach((s, i) => {
+    if (!s.foodItems) s.foodItems = [];
+    const choPlanned = s.carbo !== null && s.carbo !== '' ? Number(s.carbo) : null;
+    const choIng = calcSegmentChoIng(s);
+    const choBorraccia = choPlanned !== null ? Math.max(0, choPlanned - choIng) : 0;
+    s.carboInt = choIng;
+    s.malto = choBorraccia;
+
     // duration
     const segMin  = s.h * 60 + s.min;  // G = C*60 + D (for all rows, not just i>0)
     cumMin       += segMin;
@@ -544,7 +719,7 @@ function recalc() {
       i, name: s.name, km: s.km,
       segMin, cumMin, cumH, cumM, cumTimeDec,
       dKm, dTime, avgSpeed, segSpeed,
-      carboCalc, carbo: s.carbo, integrazione: s.integrazione, carboInt: s.carboInt,
+      carboCalc, carbo: s.carbo, carboInt: s.carboInt,
       malto: s.malto, cumMalto,
       borFrac, consum: s.consum, refill, refillH2O, refillMl, refillH2OmL,
       fillIper, cumIper, cumBor
@@ -558,6 +733,50 @@ function recalc() {
 // ═══════════════════════════════════════════════════════
 
 function fmt(n, d=1) { return n == null ? '—' : n.toFixed(d); }
+
+function fmtDuration(mins) {
+  const h = Math.floor(mins / 60);
+  const m = Math.round(mins - h * 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+function calcFoodChoPerUnit(food) {
+  if (!food) return 0;
+  if (food.grCho !== null && food.grCho !== '') return Number(food.grCho) || 0;
+  if (food.pctCho !== null && food.grFood !== null && food.grFood !== '') {
+    return (Number(food.grFood) * Number(food.pctCho) / 100) || 0;
+  }
+  return 0;
+}
+
+function foodLabel(food) {
+  if (!food) return '—';
+  const name = food.type === 'altro' && food.customName ? food.customName : food.type;
+  const cho = calcFoodChoPerUnit(food);
+  return cho > 0 ? `${name} (${fmt(cho,0)} g CHO)` : `${name} (CHO ?)`;
+}
+
+function calcSegmentChoIng(seg) {
+  if (!seg.foodItems || seg.foodItems.length === 0) return 0;
+  return seg.foodItems.reduce((sum, item) => {
+    const food = foods[item.foodIndex];
+    const qty = Number(item.qty) || 1;
+    const perUnit = calcFoodChoPerUnit(food);
+    return sum + (perUnit * qty);
+  }, 0);
+}
+
+function addSegmentFood(segIdx) {
+  if (!segments[segIdx].foodItems) segments[segIdx].foodItems = [];
+  segments[segIdx].foodItems.push({ foodIndex: 0, qty: 1 });
+  debouncedRenderAll();
+}
+
+function removeSegmentFood(segIdx, rowIdx) {
+  if (!segments[segIdx].foodItems) return;
+  segments[segIdx].foodItems.splice(rowIdx, 1);
+  debouncedRenderAll();
+}
 
 function renderAll() {
   const meta = recalc();
@@ -606,17 +825,149 @@ function renderHeader(meta) {
 }
 
 function renderConfig() {
+  // Calcoli cascata per borracce
+  const totalTime = computed.length > 0 ? computed[computed.length-1].cumTimeDec : 0;
+  const totalChoCalc = cfg.carbPerHour * totalTime;
+  
+  // CHO alimenti solidi (da tab Foods)
+  const totalChoFood = foods.reduce((sum, f) => {
+    let calcCho = 0;
+    const qty = f.qty || 1;
+    if (f.grCho !== null && f.grCho !== '') {
+      calcCho = f.grCho * qty;
+    } else if (f.pctCho !== null && f.grFood !== null && f.grFood !== '') {
+      calcCho = (f.grFood * f.pctCho / 100) * qty;
+    }
+    return sum + calcCho;
+  }, 0);
+
+  // CHO liquidi rimanenti
+  const choLiquid = totalChoCalc - totalChoFood;
+  
+  // Borraccia 1: inserita manualmente dall'utente
+  const borr1Cho = Number(cfg.choPerBottle) || 0;
+  const borr1Source = borr1Cho > 0 ? 'manuale' : 'nessuna';
+  
+  // Osm effettiva risultante dalla quantità di CHO inseriti (in %)
+  const computedOsm = borr1Cho > 0 && cfg.bottleVol > 0 ? (borr1Cho * 100) / cfg.bottleVol : null;
+
+  // Borraccia 2: osmolare ottimale (calcolata dal Target Osm) - CHO effettivi
+  const borr2Cho = (cfg.bottleVol / 1000) * cfg.targetOsm * 10;
+  
+  // Massa totale carboidrati per borraccia ottimale
+  const borr2Mass = borr2Cho / ((cfg.choPercentage || 100) / 100);
+  
+  // Massa totale carboidrati per borraccia custom
+  const borrCustomMass = computedOsm !== null ? ((cfg.bottleVol * computedOsm) / 100) / ((cfg.choPercentage || 100) / 100) : null;
+  
+  // Borraccia iperconcentrata: CHO liquidi rimanenti - CHO inseriti manualmente
+  const borrIperCho = Math.max(0, choLiquid - borr1Cho);
+  
+  // Borraccia iperconcentrata con ottimale: CHO liquidi rimanenti - CHO borraccia ottimale
+  const borrIperOptimalCho = Math.max(0, choLiquid - borr2Cho);
+  
+  // Liquidi necessari per osm ottimale con CHO rimanenti (ml)
+  const liquidForOptimalOsm = choLiquid > 0 && cfg.targetOsm > 0 ? (choLiquid * 1000) / (cfg.targetOsm * 10) : 0;
+
   document.getElementById('configRow').innerHTML = `
-    <div class="config-card"><label>Carbo/h (g)</label><input type="number" value="${cfg.carbPerHour}" oninput="cfg.carbPerHour=+this.value;debouncedRenderAll()"></div>
-    <div class="config-card"><label>Fluido Piano (ml)</label><input type="number" value="${cfg.planFluid}" oninput="cfg.planFluid=+this.value;debouncedRenderAll()"></div>
+    <div class="config-card"><label>Carbo/h (g) <span onclick="showCarbDialog()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></label><input type="number" value="${cfg.carbPerHour}" oninput="cfg.carbPerHour=+this.value;debouncedRenderAll()"></div>
     <div class="config-card"><label>Vol. Borraccia (ml)</label><input type="number" value="${cfg.bottleVol}" oninput="cfg.bottleVol=+this.value;debouncedRenderAll()"></div>
-    <div class="config-card"><label>Osm Gr (g)</label><input type="number" value="${cfg.osmGr}" oninput="cfg.osmGr=+this.value;debouncedRenderAll()"></div>
-    <div class="config-card"><label>Sciroppo Sugar %</label><input type="number" value="${cfg.siroSugar}" oninput="cfg.siroSugar=+this.value;debouncedRenderAll()"></div>
+    <div class="config-card"><label>Target Osm. % <span onclick="showOsmDialog()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></label><input type="number" step="0.5" min="2" max="10" value="${cfg.targetOsm}" oninput="cfg.targetOsm=+this.value;debouncedRenderAll()"></div>
+    <div class="config-card"><label>CHO per Borraccia (g) <span onclick="showChoBottleDialog()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></label><input type="number" step="1" value="${cfg.choPerBottle || ''}" placeholder="!!leggi info!!" oninput="cfg.choPerBottle=this.value?+this.value:0;debouncedRenderAll()"></div>
+        <div class="config-card"><label>CHO % soluto <span onclick="showChoDialog()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></label><input type="number" step="5" min="1" max="100" value="${cfg.choPercentage || 100}" oninput="cfg.choPercentage=+this.value;debouncedRenderAll()"></div>
   `;
+
+  // Summary borracce
+  const summaryHtml = `
+    <div style="margin-top:32px; padding:20px; background:var(--surface2); border-radius:14px; border:1px solid var(--border);">
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:20px;">
+        <!-- CHO totali -->
+        <div style="text-align:center; padding:16px; background:var(--surface); border-radius:10px;">
+          <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">CHO Totali</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--accent5); font-family:'JetBrains Mono',monospace;">${fmt(totalChoCalc, 0)} g</div>
+        </div>
+        
+        <!-- CHO Alimenti -->
+        <div style="text-align:center; padding:16px; background:var(--surface); border-radius:10px;">
+          <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">CHO Alimenti Solidi</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--accent3); font-family:'JetBrains Mono',monospace;">${fmt(totalChoFood, 0)} g</div>
+        </div>
+
+        <!-- CHO Liquidi -->
+        <div style="text-align:center; padding:16px; background:var(--surface); border-radius:10px;">
+          <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">CHO Liquidi Rimanenti</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--accent); font-family:'JetBrains Mono',monospace;">${fmt(choLiquid, 0)} g</div>
+        </div>
+
+        <!-- Liquidi per osm ottimale -->
+        <div style="text-align:center; padding:16px; background:var(--surface); border-radius:10px;">
+          <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Liquidi per Osm Ottimale</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--accent4); font-family:'JetBrains Mono',monospace;">${fmt(liquidForOptimalOsm / 1000, 2)} L</div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px; font-weight:600;">${fmt(liquidForOptimalOsm / cfg.bottleVol, 1)} borracce</div>
+        </div>
+
+        <!-- Liquidi per osm custom -->
+        <div style="text-align:center; padding:16px; background:var(--surface); border-radius:10px;">
+          <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Liquidi per Osm Custom</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--accent2); font-family:'JetBrains Mono',monospace;">${computedOsm !== null ? fmt((choLiquid * 100) / computedOsm / 1000, 2) + ' L' : '—'}</div>
+          <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px; font-weight:600;">${computedOsm !== null ? fmt(((choLiquid * 100) / computedOsm) / cfg.bottleVol, 1) + ' borracce' : '—'}</div>
+        </div>
+
+        <!-- Osm custom -->
+        <div style="text-align:center; padding:16px; background:var(--surface); border-radius:10px;">
+          <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Osm per CHO inseriti</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--accent4); font-family:'JetBrains Mono',monospace;">${computedOsm !== null ? fmt(computedOsm,1) + '%' : '—'}</div>
+        </div>
+      </div>
+
+      <!-- Borracce -->
+      <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <!-- Riga 1 -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <!-- Borraccia Ottimale -->
+          <div style="padding:16px; background:rgba(16,185,129,0.1); border:1px solid var(--accent4); border-radius:10px;">
+            <div style="font-size:0.8rem; font-weight:600; color:var(--accent4); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">⚡ Borraccia Ottimale</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:2px;">Volume: ${cfg.bottleVol} ml</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">Osmolarità: ${fmt(cfg.targetOsm, 1)}%</div>
+            <div style="font-size:1.4rem; font-weight:800; color:var(--accent4); font-family:'JetBrains Mono',monospace;">${fmt(borr2Mass, 0)} g carboidrati</div>
+            <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">(${fmt(borr2Cho, 0)} g CHO effettivi)</div>
+          </div>
+          <!-- Borraccia Iperconcentrata con Ottimale -->
+          <div style="padding:16px; background:rgba(245,158,11,0.1); border:1px solid var(--accent5); border-radius:10px;">
+            <div style="font-size:0.8rem; font-weight:600; color:var(--accent5); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">🔥 Iperconcentrata - Ottimale</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:2px;">Volume: ${cfg.bottleVol} ml</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">CHO liquidi - borraccia ottimale</div>
+            <div style="font-size:1.4rem; font-weight:800; color:var(--accent5); font-family:'JetBrains Mono',monospace;">${fmt(borrIperOptimalCho, 0)} g CHO</div>
+          </div>
+        </div>
+        
+        <!-- Riga 2 -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+          <!-- Borraccia Custom -->
+          <div style="padding:16px; background:rgba(124,58,237,0.1); border:1px solid var(--accent2); border-radius:10px;">
+            <div style="font-size:0.8rem; font-weight:600; color:var(--accent2); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">💧 Borraccia Custom</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:2px;">Volume: ${cfg.bottleVol} ml</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">Osmolarità: ${computedOsm !== null ? fmt(computedOsm, 1) + '%' : '—'}</div>
+            <div style="font-size:1.4rem; font-weight:800; color:var(--accent2); font-family:'JetBrains Mono',monospace;">${computedOsm !== null ? fmt(borrCustomMass, 0) + ' g carboidrati' : '—'}</div>
+            <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">${computedOsm !== null ? '(' + fmt((cfg.bottleVol * computedOsm) / 100, 0) + ' g CHO effettivi)' : ''}</div>
+          </div>
+          <!-- Borraccia Iperconcentrata -->
+          <div style="padding:16px; background:rgba(244,63,94,0.1); border:1px solid var(--accent3); border-radius:10px;">
+            <div style="font-size:0.8rem; font-weight:600; color:var(--accent3); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px;">🔥 Borraccia Iperconcentrata</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:2px;">Volume: ${cfg.bottleVol} ml</div>
+            <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:8px;">CHO rimanenti distribuiti</div>
+            <div style="font-size:1.4rem; font-weight:800; color:var(--accent3); font-family:'JetBrains Mono',monospace;">${fmt(borrIperCho, 0)} g CHO</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById('configRow').insertAdjacentHTML('afterend', summaryHtml);
 }
 
 function addSegment() {
-  segments.push({ name:'Nuovo', km:0, h:0, min:0, carbo:0, integrazione:'', carboInt:0, malto:0, consum:null });
+  segments.push({ name:'Nuovo', km:0, h:0, min:0, carbo:null, carboInt:0, malto:0, consum:null, foodItems:[] });
   debouncedRenderAll();
 }
 
@@ -662,16 +1013,19 @@ function renderTable() {
 function renderSegmentNutrition() {
   let hdr = `<thead><tr>
     <th style="text-align:left">Tratto</th>
-    <th class="col-div">CarboCalc</th><th>Carbo</th><th>Malto (g)</th><th>Borr. fraz.</th>
+    <th class="col-div">CHO Calc</th><th>CHO Planned</th><th>CHO Ing</th><th>CHO Borraccia</th>
   </tr></thead>`;
 
   let rows = computed.map((c,i) => {
+    const planned = segments[i].carbo !== null && segments[i].carbo !== '' ? segments[i].carbo : '';
+    const choIng = segments[i].carboInt || 0;
+    const choBorr = planned !== '' ? Math.max(0, Number(planned) - choIng) : '—';
     return `<tr>
       <td>${c.name}</td>
       <td class="col-div calc carb">${fmt(c.carboCalc)}</td>
-      <td><input type="number" value="${segments[i].carbo}" oninput="segments[${i}].carbo=+this.value;debouncedRenderAll()"></td>
-      <td><input type="number" value="${segments[i].malto}" oninput="segments[${i}].malto=+this.value;debouncedRenderAll()"></td>
-      <td class="calc bor">${fmt(c.borFrac,2)}</td>
+      <td><input type="number" value="${planned}" placeholder="—" oninput="segments[${i}].carbo=this.value?+this.value:null;debouncedRenderAll()"></td>
+      <td class="calc">${fmt(choIng,0)}</td>
+      <td class="calc bor">${choBorr === '—' ? '—' : fmt(choBorr,0)}</td>
     </tr>`;
   }).join('');
 
@@ -749,29 +1103,90 @@ function renderFoods() {
 
 function renderNutrition(meta) {
   const colors = ['#00e5ff','#7c3aed','#f43f5e','#10b981','#f59e0b','#06b6d4','#8b5cf6','#ec4899'];
-  let html = computed.map((c,i) => `
-    <div class="nut-card" style="animation-delay:${i*0.06}s">
-      <div class="card-glow" style="background:${colors[i%colors.length]}"></div>
-      <div class="nt-header">
-        <span class="nt-name">${c.name}</span>
-        <span class="nt-km">${c.km} km</span>
+  
+  let html = computed.map((c,i) => {
+    const seg = segments[i];
+    const choPlanned = seg.carbo !== null && seg.carbo !== '' ? Number(seg.carbo) : null;
+    const choIng = calcSegmentChoIng(seg);
+    const choBorr = choPlanned !== null ? Math.max(0, choPlanned - choIng) : 0;
+    
+    // Render mini table degli alimenti selezionati
+    let foodRows = '';
+    if (seg.foodItems && seg.foodItems.length > 0) {
+      foodRows = seg.foodItems.map((item, rowIdx) => {
+        const foodOptions = foods.map((f, fIdx) => 
+          `<option value="${fIdx}" ${item.foodIndex === fIdx ? 'selected' : ''}>${foodLabel(f)}</option>`
+        ).join('');
+        const perUnit = calcFoodChoPerUnit(foods[item.foodIndex]);
+        const totalCho = perUnit * (Number(item.qty) || 1);
+        return `
+          <tr style="font-size:0.75rem;">
+            <td style="padding:4px 0;">
+              <select onchange="segments[${i}].foodItems[${rowIdx}].foodIndex=+this.value;debouncedRenderAll()" style="width:100%; font-size:0.7rem; padding:2px; background:var(--surface2); border:1px solid var(--border); border-radius:4px; color:var(--text);">
+                ${foodOptions}
+              </select>
+            </td>
+            <td style="padding:4px 4px; text-align:center;">
+              <input type="number" value="${item.qty || 1}" min="1" oninput="segments[${i}].foodItems[${rowIdx}].qty=+this.value;debouncedRenderAll()" style="width:50px; font-size:0.7rem; padding:2px; text-align:center; background:var(--surface2); border:1px solid var(--border); border-radius:4px; color:var(--text);">
+            </td>
+            <td style="padding:4px 4px; text-align:right; color:var(--accent3); font-weight:600; font-family:'JetBrains Mono',monospace;">${fmt(totalCho,0)} g</td>
+            <td style="padding:4px 0; text-align:center;">
+              <button onclick="removeSegmentFood(${i}, ${rowIdx})" style="background:var(--accent3); color:#0a0e1a; border:none; border-radius:4px; padding:2px 6px; font-size:0.65rem; cursor:pointer;">✕</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    const foodTableHtml = `
+      <div style="margin-top:12px; padding:10px; background:var(--surface2); border-radius:8px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Alimenti</span>
+          <button onclick="addSegmentFood(${i})" style="background:var(--accent4); color:#0a0e1a; border:none; border-radius:4px; padding:3px 8px; font-size:0.7rem; cursor:pointer;">+ Aggiungi</button>
+        </div>
+        ${seg.foodItems && seg.foodItems.length > 0 ? `
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase;">
+                <th style="text-align:left; padding:4px 0;">Alimento</th>
+                <th style="text-align:center; padding:4px 4px;">Qtà</th>
+                <th style="text-align:right; padding:4px 4px;">CHO</th>
+                <th style="text-align:center; padding:4px 0; width:30px;"></th>
+              </tr>
+            </thead>
+            <tbody>${foodRows}</tbody>
+          </table>
+        ` : '<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:8px 0;">Nessun alimento selezionato</div>'}
       </div>
-      ${c.integrazione ? `<span class="nt-food">🍫 ${c.integrazione}</span>` : ''}
-      <div class="nt-stats">
-        <div class="nt-stat"><div class="st-label">Carbo Calc</div><div class="st-val accent5">${fmt(c.carboCalc)} g</div></div>
-        <div class="nt-stat"><div class="st-label">Carbo Piano</div><div class="st-val accent">${c.carbo} g</div></div>
-        <div class="nt-stat"><div class="st-label">Carbo Int</div><div class="st-val accent2">${c.carboInt} g</div></div>
-        <div class="nt-stat"><div class="st-label">Maltodestrina</div><div class="st-val accent4">${c.malto} g</div></div>
+    `;
+    
+    return `
+      <div class="nut-card" style="animation-delay:${i*0.06}s; cursor:pointer;" onclick="this.querySelector('input[type=number]').focus()">
+        <div class="card-glow" style="background:${colors[i%colors.length]}"></div>
+        <div class="nt-header">
+          <span class="nt-name">${c.name}</span>
+          <span class="nt-km">${c.km} km · ${fmtDuration(c.segMin)}</span>
+        </div>
+        <div style="margin-bottom:12px;">
+          <label style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">CHO Planned</label>
+          <input type="number" value="${choPlanned !== null ? choPlanned : ''}" placeholder="Inserisci CHO" oninput="segments[${i}].carbo=this.value?+this.value:null;debouncedRenderAll()" style="width:100%; font-size:1.1rem; font-weight:700; font-family:'JetBrains Mono',monospace; padding:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--accent); text-align:center;" onclick="event.stopPropagation()">
+        </div>
+        <div class="nt-stats">
+          <div class="nt-stat"><div class="st-label">CHO Calc</div><div class="st-val accent5">${fmt(c.carboCalc,0)} g</div></div>
+          <div class="nt-stat"><div class="st-label">CHO Ing</div><div class="st-val accent2">${fmt(choIng,0)} g</div></div>
+          <div class="nt-stat" style="grid-column:span 2;"><div class="st-label">CHO Borraccia</div><div class="st-val accent4">${choPlanned !== null ? fmt(choBorr,0) + ' g' : '—'}</div></div>
+        </div>
+        ${foodTableHtml}
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
   document.getElementById('nutGrid').innerHTML = html;
 
   // KPI summary
   const totCarboCalc = computed.reduce((a,c) => a + c.carboCalc, 0);
-  const totCarboPiano = segments.reduce((a,s) => a + s.carbo, 0);
-  const totCarboInt = segments.reduce((a,s) => a + s.carboInt, 0);
-  const totMalto = segments.reduce((a,s) => a + s.malto, 0);
+  const totCarboPiano = segments.reduce((a,s) => (s.carbo !== null ? a + Number(s.carbo) : a), 0);
+  const totCarboInt = segments.reduce((a,s) => a + (s.carboInt || 0), 0);
+  const totMalto = segments.reduce((a,s) => a + (s.malto || 0), 0);
   const totCarboAll = totCarboInt + totMalto;
   const maltoReq = totCarboPiano - totCarboInt;       // R13
   const dScir = ((totMalto/2)*(cfg.siroSugar/100)) + (totMalto/2); // S13
@@ -790,7 +1205,7 @@ function renderNutrition(meta) {
 }
 
 function renderBottles(meta) {
-  const grIper  = cfg.planFluid - cfg.osmGr;
+  const grIper  = cfg.bottleVol - cfg.osmGr;
   const pctIper = cfg.osmGr / grIper;
   const osmPct  = cfg.osmGr / cfg.bottleVol;
 
@@ -966,6 +1381,82 @@ function switchTab(name) {
   document.querySelector(`[onclick="switchTab('${name}')"]`).classList.add('active');
   if (name === 'charts') setTimeout(renderCharts, 100);
 }
+
+// ═══════════════════════════════════════════════════════
+// MODAL DIALOG — Osmolarità
+// ═══════════════════════════════════════════════════════
+function showOsmDialog() {
+  document.getElementById('osmModal').classList.add('active');
+}
+
+function closeOsmDialog() {
+  document.getElementById('osmModal').classList.remove('active');
+}
+
+function showChoDialog() {
+  document.getElementById('choModal').classList.add('active');
+}
+
+function closeChoDialog() {
+  document.getElementById('choModal').classList.remove('active');
+}
+
+function showCarbDialog() {
+  updateCarbReminder();
+  document.getElementById('carbModal').classList.add('active');
+}
+
+function closeCarbDialog() {
+  document.getElementById('carbModal').classList.remove('active');
+}
+
+function showChoBottleDialog() {
+  document.getElementById('choBottleModal').classList.add('active');
+}
+
+function closeChoBottleDialog() {
+  document.getElementById('choBottleModal').classList.remove('active');
+}
+
+function updateCarbReminder() {
+  const carbs = cfg.carbPerHour;
+  let reminder = '';
+  
+  if (carbs <= 60) {
+    reminder = `<strong>✅ ${carbs} gr/h:</strong> Solo glucosio/maltodestrine. Nessun fruttosio necessario.`;
+  } else if (carbs <= 70) {
+    const fruct = carbs - 60;
+    reminder = `<strong>⚠️ ${carbs} gr/h:</strong> Glucosio ${Math.round(60)}g + Fruttosio ${Math.round(fruct)}g`;
+  } else if (carbs <= 100) {
+    const fruct = carbs - 60;
+    reminder = `<strong>⚠️ ${carbs} gr/h:</strong> Glucosio 60g + Fruttosio ${Math.round(fruct)}g`;
+  } else {
+    const fruct = carbs - 60;
+    reminder = `<strong>⚠️ ${carbs} gr/h:</strong> Glucosio 60g + Fruttosio ${Math.round(fruct)}g (consigliato rapporto 1:1)`;
+  }
+  
+  document.getElementById('carbReminder').innerHTML = reminder;
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', (e) => {
+  const osmModal = document.getElementById('osmModal');
+  const choModal = document.getElementById('choModal');
+  const carbModal = document.getElementById('carbModal');
+  const choBottleModal = document.getElementById('choBottleModal');
+  if (e.target === osmModal) {
+    osmModal.classList.remove('active');
+  }
+  if (e.target === choModal) {
+    choModal.classList.remove('active');
+  }
+  if (e.target === carbModal) {
+    carbModal.classList.remove('active');
+  }
+  if (e.target === choBottleModal) {
+    choBottleModal.classList.remove('active');
+  }
+});
 
 // ═══════════════════════════════════════════════════════
 // INIT

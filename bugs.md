@@ -1,0 +1,1 @@
+tb configurazione i risultati vengono stampati ogni volta e mantenuti
