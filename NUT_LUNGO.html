@@ -376,14 +376,11 @@ body {
   <div class="race-meta" id="raceMeta"></div>
 </div>
 
-<!-- CONFIG -->
-<div class="section-title"><span class="dot" style="background:var(--accent)"></span>Configurazione</div>
-<div class="config-row" id="configRow"></div>
-
 <!-- TABS -->
 <div class="tab-nav">
   <button class="tab-btn active" onclick="switchTab('segments')">📍 Tratti & Tempo</button>
   <button class="tab-btn" onclick="switchTab('foods')">🍔 Alimenti</button>
+  <button class="tab-btn" onclick="switchTab('config')">⚙️ Configurazione</button>
   <button class="tab-btn" onclick="switchTab('nutrition')">🍜 Nutrizione</button>
   <button class="tab-btn" onclick="switchTab('bottles')">💧 Borracce</button>
   <button class="tab-btn" onclick="switchTab('segNutrition')">⚡ Nutrizione Segmenti</button>
@@ -416,6 +413,13 @@ body {
   <div class="table-scroll"><table class="food-table" id="foodTable"></table></div>
   <div class="section-title" style="margin-top:30px"><span class="dot" style="background:var(--accent5)"></span>Riepilogo CHO</div>
   <div class="food-summary-row" id="foodSummary"></div>
+  <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
+</div>
+
+<!-- TAB: CONFIG -->
+<div class="tab-panel" id="tab-config">
+  <div class="section-title"><span class="dot" style="background:var(--accent)"></span>Parametri di Configurazione</div>
+  <div class="config-row" id="configRow"></div>
   <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
@@ -959,10 +963,7 @@ function switchTab(name) {
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
-  document.querySelectorAll('.tab-btn').forEach(b => {
-    if (b.textContent.toLowerCase().includes(name === 'segments' ? 'tratti' : name === 'foods' ? 'alimenti' : name === 'nutrition' ? 'nutrizione' : name === 'bottles' ? 'borracce' : 'grafici'))
-      b.classList.add('active');
-  });
+  document.querySelector(`[onclick="switchTab('${name}')"]`).classList.add('active');
   if (name === 'charts') setTimeout(renderCharts, 100);
 }
 
