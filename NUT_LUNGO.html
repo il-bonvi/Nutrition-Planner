@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NUT LUNGO — Race Nutrition Planner</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0a0e1a;
+  --surface: #111827;
+  --surface2: #1a2236;
+  --surface3: #243044;
+  --accent: #00e5ff;
+  --accent2: #7c3aed;
+  --accent3: #f43f5e;
+  --accent4: #10b981;
+  --accent5: #f59e0b;
+  --text: #e2e8f0;
+  --text-muted: #64748b;
+  --border: rgba(148,163,184,0.1);
+  --glow: rgba(0,229,255,0.15);
+  --glow2: rgba(124,58,237,0.12);
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── ANIMATED BG ── */
+.bg-ambient {
+  position: fixed; inset:0; z-index:0; pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 20%, rgba(124,58,237,0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 70%, rgba(0,229,255,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 40% at 60% 10%, rgba(244,63,94,0.05) 0%, transparent 70%);
+  animation: ambientShift 12s ease-in-out infinite alternate;
+}
+@keyframes ambientShift {
+  0%   { transform: scale(1) rotate(0deg); opacity:1; }
+  100% { transform: scale(1.1) rotate(2deg); opacity:0.7; }
+}
+
+/* ── LAYOUT ── */
+.wrapper { position:relative; z-index:1; max-width:1440px; margin:0 auto; padding:24px 20px; }
+
+/* ── HEADER ── */
+.header {
+  text-align:center; padding: 48px 0 32px;
+  animation: fadeDown 0.8s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes fadeDown { from { opacity:0; transform:translateY(-30px); } to { opacity:1; transform:translateY(0); } }
+
+.header h1 {
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  font-weight:800; letter-spacing:-2px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.header .subtitle {
+  color: var(--text-muted); font-size:0.95rem; margin-top:6px; font-weight:300; letter-spacing:2px; text-transform:uppercase;
+}
+.header .race-meta {
+  display:flex; justify-content:center; gap:32px; margin-top:22px; flex-wrap:wrap;
+}
+.race-meta .meta-item {
+  background: var(--surface); border:1px solid var(--border);
+  border-radius:12px; padding:10px 22px;
+  backdrop-filter:blur(8px);
+  animation: fadeUp 0.6s cubic-bezier(.22,1,.36,1) both;
+}
+.race-meta .meta-item:nth-child(1) { animation-delay:.1s }
+.race-meta .meta-item:nth-child(2) { animation-delay:.2s }
+.race-meta .meta-item:nth-child(3) { animation-delay:.3s }
+.meta-item .label { font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; }
+.meta-item .value { font-size:1.2rem; font-weight:700; margin-top:2px; }
+.meta-item .value .unit { font-size:0.75rem; color:var(--text-muted); margin-left:4px; font-weight:400; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+
+/* ── SECTION TITLES ── */
+.section-title {
+  font-size:1.1rem; font-weight:600; color:var(--text-muted);
+  text-transform:uppercase; letter-spacing:3px;
+  margin: 36px 0 16px; padding-left:4px;
+  display:flex; align-items:center; gap:12px;
+}
+.section-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg, var(--border), transparent); }
+.section-title .dot { width:8px; height:8px; border-radius:50%; }
+
+/* ── CONFIG PANEL ── */
+.config-row {
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:14px;
+  margin-bottom:28px;
+}
+.config-card {
+  background: var(--surface); border:1px solid var(--border); border-radius:14px;
+  padding:16px 18px; transition: all .25s;
+  animation: fadeUp 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+.config-card:hover { border-color: var(--accent); box-shadow:0 0 18px var(--glow); }
+.config-card label { font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.2px; display:block; margin-bottom:6px; }
+.config-card input[type=number] {
+  width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px;
+  color: var(--accent); font-family:'JetBrains Mono',monospace; font-size:1.05rem; font-weight:500;
+  padding:8px 10px; outline:none; transition:.2s;
+}
+.config-card input[type=number]:focus { border-color:var(--accent); box-shadow:0 0 12px var(--glow); }
+
+/* ── MAIN SEGMENT TABLE ── */
+.table-scroll { overflow-x:auto; border-radius:18px; border:1px solid var(--border); }
+.seg-table {
+  width:100%; border-collapse:collapse; min-width:900px;
+  background:var(--surface); font-size:0.82rem;
+}
+.seg-table thead th {
+  background:var(--surface2); padding:12px 10px; text-align:center;
+  font-weight:600; color:var(--text-muted); font-size:0.68rem;
+  text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid var(--border);
+  white-space:nowrap; position:sticky; top:0; z-index:2;
+}
+.seg-table thead th:first-child { text-align:left; padding-left:18px; }
+
+.seg-table tbody tr {
+  border-bottom:1px solid var(--border);
+  transition: background .2s;
+  animation: rowIn 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+.seg-table tbody tr:nth-child(1){animation-delay:.05s}
+.seg-table tbody tr:nth-child(2){animation-delay:.1s}
+.seg-table tbody tr:nth-child(3){animation-delay:.15s}
+.seg-table tbody tr:nth-child(4){animation-delay:.2s}
+.seg-table tbody tr:nth-child(5){animation-delay:.25s}
+.seg-table tbody tr:nth-child(6){animation-delay:.3s}
+.seg-table tbody tr:nth-child(7){animation-delay:.35s}
+.seg-table tbody tr:nth-child(8){animation-delay:.4s}
+@keyframes rowIn { from { opacity:0; transform:translateX(-16px); } to { opacity:1; transform:translateX(0); } }
+
+.seg-table tbody tr:hover { background: rgba(0,229,255,0.03); }
+.seg-table tbody tr:last-child { border-bottom:none; }
+
+.seg-table td { padding:9px 10px; text-align:center; }
+.seg-table td:first-child { text-align:left; padding-left:18px; font-weight:600; color:var(--text); }
+
+/* editable cells */
+.seg-table input {
+  width:100%; background:transparent; border:none; color:var(--text);
+  font-family:'JetBrains Mono',monospace; font-size:0.82rem;
+  text-align:center; padding:3px 0; outline:none; transition:.2s;
+  -moz-appearance:textfield; appearance:textfield;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+.seg-table input::-webkit-inner-spin-button,
+.seg-table input::-webkit-outer-spin-button { -webkit-appearance:none; }
+.seg-table input:focus { background:rgba(0,229,255,0.08); border-radius:6px; }
+.seg-table input[type=text] { text-align:left; font-family:'Outfit',sans-serif; font-weight:500; }
+
+/* computed cells */
+.seg-table .calc { color:var(--text-muted); font-family:'JetBrains Mono',monospace; font-size:0.78rem; }
+.seg-table .calc.speed { color:var(--accent4); font-weight:600; }
+.seg-table .calc.carb  { color:var(--accent5); font-weight:600; }
+.seg-table .calc.bor   { color:var(--accent); font-weight:600; }
+
+/* column group dividers */
+.seg-table .col-div { border-left:1px solid var(--border); }
+
+/* ── FOOD TABLE ── */
+.food-table {
+  width:100%; border-collapse:collapse; min-width:900px;
+  background:var(--surface); font-size:0.82rem;
+}
+.food-table thead th {
+  background:var(--surface2); padding:12px 10px; text-align:center;
+  font-weight:600; color:var(--text-muted); font-size:0.68rem;
+  text-transform:uppercase; letter-spacing:1px; border-bottom:1px solid var(--border);
+  white-space:nowrap; position:sticky; top:0; z-index:2;
+}
+.food-table thead th:first-child { text-align:left; padding-left:18px; }
+
+.food-table tbody tr {
+  border-bottom:1px solid var(--border);
+  transition: background .2s;
+  animation: rowIn 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+.food-table tbody tr:hover { background: rgba(244,63,94,0.03); }
+.food-table tbody tr:last-child { border-bottom:none; }
+
+.food-table td { padding:9px 10px; text-align:center; }
+.food-table td:first-child { text-align:left; padding-left:18px; font-weight:600; color:var(--text); }
+
+/* food table editable cells */
+.food-table input,
+.food-table select {
+  width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:4px;
+  color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.82rem;
+  text-align:center; padding:4px 6px; outline:none; transition:.2s;
+  appearance:none; -moz-appearance:none; -webkit-appearance:none;
+}
+.food-table .food-select {
+  background:var(--surface2) !important; text-align:left; font-family:'Outfit',sans-serif;
+  cursor:pointer; border:1px solid var(--border) !important; border-radius:4px !important;
+  padding:4px 6px !important; transition:.2s !important; color:var(--text) !important;
+}
+.food-table .food-select:focus {
+  background:var(--surface2) !important; border-color:var(--accent3) !important;
+  box-shadow:0 0 8px rgba(244,63,94,0.2) !important; outline:none !important;
+}
+.food-table .food-select option {
+  background:var(--surface) !important; color:var(--text) !important;
+  padding:4px 6px !important;
+}
+.food-table input:focus,
+.food-table select:focus { background:rgba(244,63,94,0.08); border-color:var(--accent3); box-shadow:0 0 8px rgba(244,63,94,0.2); }
+.food-table input[type=text] {
+  text-align:left; font-family:'Outfit',sans-serif; font-weight:500;
+  background:var(--surface3); border:1px solid var(--border); border-radius:3px;
+  color:var(--text); font-size:0.75rem; padding:2px 4px; margin-top:2px;
+}
+.food-table input::-webkit-outer-spin-button,
+.food-table input::-webkit-inner-spin-button { -webkit-appearance:none; }
+
+/* food table computed cells */
+.food-table .calc { color:var(--accent5); font-weight:600; font-family:'JetBrains Mono',monospace; font-size:0.78rem; }
+.food-table .col-div { border-left:1px solid var(--border); }
+
+/* ── NUTRITION CARDS ── */
+.nut-grid {
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px;
+  margin-top:8px;
+}
+.nut-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:18px; position:relative; overflow:hidden; transition: all .3s;
+  animation: scaleIn 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+.nut-card:hover { transform:translateY(-3px); box-shadow:0 8px 32px rgba(0,0,0,.3); border-color:var(--accent); }
+@keyframes scaleIn { from { opacity:0; transform:scale(.94); } to { opacity:1; transform:scale(1); } }
+
+.nut-card .card-glow {
+  position:absolute; inset:-40%; border-radius:50%; opacity:.08;
+  pointer-events:none; filter:blur(30px);
+}
+.nut-card .nt-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.nut-card .nt-name { font-weight:700; font-size:1rem; }
+.nut-card .nt-km { font-size:0.7rem; color:var(--text-muted); background:var(--surface2); padding:3px 10px; border-radius:20px; }
+.nut-card .nt-food { font-size:0.78rem; color:var(--accent5); background:rgba(245,158,11,.08); padding:4px 10px; border-radius:8px; display:inline-block; margin-bottom:10px; }
+.nut-card .nt-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.nt-stat { background:var(--surface2); border-radius:8px; padding:8px 10px; }
+.nt-stat .st-label { font-size:0.62rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; }
+.nt-stat .st-val { font-size:0.92rem; font-weight:600; margin-top:2px; font-family:'JetBrains Mono',monospace; }
+.nt-stat .st-val.accent  { color:var(--accent); }
+.nt-stat .st-val.accent2 { color:var(--accent2); }
+.nt-stat .st-val.accent3 { color:var(--accent3); }
+.nt-stat .st-val.accent4 { color:var(--accent4); }
+.nt-stat .st-val.accent5 { color:var(--accent5); }
+
+/* ── BOTTLE SECTION ── */
+.bottle-row {
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px;
+}
+.bottle-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:18px;
+  padding:20px; transition:.3s; animation: fadeUp 0.6s cubic-bezier(.22,1,.36,1) both;
+}
+.bottle-card:hover { border-color:var(--accent2); box-shadow:0 0 24px var(--glow2); }
+.bottle-card h4 { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:14px; }
+.bottle-card .bc-row { display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid var(--border); font-size:0.82rem; }
+.bottle-card .bc-row:last-child { border-bottom:none; }
+.bottle-card .bc-row .bc-label { color:var(--text-muted); }
+.bottle-card .bc-row .bc-val { font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--accent); }
+.bottle-card .bc-row .bc-val.purple { color:var(--accent2); }
+.bottle-card .bc-row .bc-val.green  { color:var(--accent4); }
+.bottle-card .bc-row .bc-val.amber  { color:var(--accent5); }
+
+/* ── FOOD SUMMARY ── */
+.food-summary-row {
+  display:flex; justify-content:center; margin-top:8px;
+}
+.food-total-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:16px;
+  padding:24px 20px; text-align:center; transition:.3s; min-width:200px;
+  animation: fadeUp 0.55s cubic-bezier(.22,1,.36,1) both;
+}
+.food-total-card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,.25); }
+.food-total-card .total-cho-value {
+  font-size:2.2rem; font-weight:800; font-family:'JetBrains Mono',monospace;
+  background: linear-gradient(135deg, var(--accent5), var(--accent3));
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
+  margin-bottom:4px;
+}
+.food-total-card .total-cho-label {
+  font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.2px;
+}
+
+/* ── CHARTS ── */
+.charts-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+@media(max-width:720px) { .charts-grid { grid-template-columns:1fr; } }
+.chart-box {
+  background:var(--surface); border:1px solid var(--border); border-radius:18px;
+  padding:20px; animation: fadeUp 0.6s cubic-bezier(.22,1,.36,1) both;
+}
+.chart-box h4 { font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.5px; margin-bottom:14px; }
+.chart-box .echarts-container { width:100%; height:260px; }
+
+/* ── LEGEND PILLS ── */
+.legend-row { display:flex; gap:12px; flex-wrap:wrap; margin-top:10px; }
+.legend-pill { display:flex; align-items:center; gap:6px; font-size:0.72rem; color:var(--text-muted); }
+.legend-pill .pill-dot { width:10px; height:10px; border-radius:50%; }
+
+/* ── BOTTLE VISUAL ── */
+.bottle-visual-wrap { display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
+.bottle-svg-wrap { text-align:center; }
+.bottle-svg-wrap label { font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; display:block; margin-top:8px; }
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px) {
+  .config-row { grid-template-columns:1fr 1fr; }
+  .charts-grid { grid-template-columns:1fr; }
+}
+
+/* scrollbar */
+::-webkit-scrollbar { width:6px; height:6px; }
+::-webkit-scrollbar-track { background:var(--surface2); border-radius:3px; }
+::-webkit-scrollbar-thumb { background:var(--surface3); border-radius:3px; }
+::-webkit-scrollbar-thumb:hover { background:var(--accent); }
+
+/* ── SEGMENT PROGRESS BAR ── */
+.seg-progress { display:flex; height:6px; border-radius:3px; overflow:hidden; margin:12px 0 4px; background:var(--surface2); }
+.seg-progress span { transition: width .4s ease; }
+
+/* ── TAB NAV ── */
+.tab-nav {
+  display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;
+}
+.tab-btn {
+  background:var(--surface); border:1px solid var(--border); color:var(--text-muted);
+  border-radius:30px; padding:9px 22px; font-size:0.82rem; font-weight:500;
+  cursor:pointer; transition:.25s; font-family:'Outfit',sans-serif;
+}
+.tab-btn:hover { border-color:var(--accent); color:var(--text); }
+.tab-btn.active { background:var(--accent); color:#0a0e1a; border-color:var(--accent); font-weight:700; box-shadow:0 0 16px var(--glow); }
+
+.tab-panel { display:none; }
+.tab-panel.active { display:block; animation: fadeIn .35s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+<div class="bg-ambient"></div>
+<div class="wrapper">
+
+<!-- HEADER -->
+<div class="header">
+  <h1>NUT LUNGO</h1>
+  <div class="subtitle">Race Nutrition & Hydration Planner</div>
+  <div class="race-meta" id="raceMeta"></div>
+</div>
+
+<!-- CONFIG -->
+<div class="section-title"><span class="dot" style="background:var(--accent)"></span>Configurazione</div>
+<div class="config-row" id="configRow"></div>
+
+<!-- TABS -->
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('segments')">📍 Tratti & Tempo</button>
+  <button class="tab-btn" onclick="switchTab('foods')">🍔 Alimenti</button>
+  <button class="tab-btn" onclick="switchTab('nutrition')">🍜 Nutrizione</button>
+  <button class="tab-btn" onclick="switchTab('bottles')">💧 Borracce</button>
+  <button class="tab-btn" onclick="switchTab('charts')">📊 Grafici</button>
+</div>
+
+<!-- TAB: SEGMENTS -->
+<div class="tab-panel active" id="tab-segments">
+  <div class="table-scroll"><table class="seg-table" id="segTable"></table></div>
+</div>
+
+<!-- TAB: FOODS -->
+<div class="tab-panel" id="tab-foods">
+  <div class="section-title"><span class="dot" style="background:var(--accent3)"></span>Alimenti Disponibili</div>
+  <div class="table-scroll"><table class="food-table" id="foodTable"></table></div>
+  <div class="section-title" style="margin-top:30px"><span class="dot" style="background:var(--accent5)"></span>Riepilogo CHO</div>
+  <div class="food-summary-row" id="foodSummary"></div>
+</div>
+
+<!-- TAB: NUTRITION -->
+<div class="tab-panel" id="tab-nutrition">
+  <div class="section-title"><span class="dot" style="background:var(--accent5)"></span>Piano Alimentare per Tratto</div>
+  <div class="nut-grid" id="nutGrid"></div>
+  <div class="section-title" style="margin-top:30px"><span class="dot" style="background:var(--accent4)"></span>Riepilogo Carboidrati</div>
+  <div class="kpi-row" id="kpiRow"></div>
+</div>
+
+<!-- TAB: BOTTLES -->
+<div class="tab-panel" id="tab-bottles">
+  <div class="section-title"><span class="dot" style="background:var(--accent2)"></span>Configurazione Borracce</div>
+  <div class="bottle-row" id="bottleConfig"></div>
+  <div class="section-title" style="margin-top:28px"><span class="dot" style="background:var(--accent)"></span>Piano Idratazione per Tratto</div>
+  <div class="bottle-row" id="bottleCards"></div>
+</div>
+
+<!-- TAB: CHARTS -->
+<div class="tab-panel" id="tab-charts">
+  <div class="charts-grid">
+    <div class="chart-box"><h4>Velocità per Tratto</h4><div class="echarts-container" id="chartSpeed"></div></div>
+    <div class="chart-box"><h4>Carboidrati: Piano vs Calcolato</h4><div class="echarts-container" id="chartCarbs"></div></div>
+    <div class="chart-box"><h4>Consumo Borraccia per Tratto</h4><div class="echarts-container" id="chartBottle"></div></div>
+    <div class="chart-box"><h4>Profilo Temporale della Gara</h4><div class="echarts-container" id="chartTime"></div></div>
+  </div>
+</div>
+
+</div><!-- /wrapper -->
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA MODEL — faithfully ported from NUT_LUNGO.xlsx
+// ═══════════════════════════════════════════════════════
+
+// ── CONFIG (editable globals) ──
+const cfg = {
+  carbPerHour: 80,       // R15 — carbo/h target
+  planFluid: 500,        // S15 — plan fluid ml
+  bottleVol: 950,        // S20 — borraccia ml
+  osmGr: 120,            // U18 — gr osmolarità borraccia easy
+  siroSugar: 93,         // S23 — sciroppo sugar %
+};
+
+// ── SEGMENTS (input data) ──
+// Each: { name, km, h, min, carbo, integrazione, carboInt, malto, consum }
+let segments = [
+  { name:'Molina',    km:45,  h:2, min:0,  carbo:160, integrazione:'barretta 30', carboInt:80,  malto:80,  consum:0.7 },
+  { name:'Vic',       km:80,  h:1, min:20, carbo:110, integrazione:'gel 45',      carboInt:30,  malto:70,  consum:null },
+  { name:'Canazei',   km:90,  h:0, min:25, carbo:40,  integrazione:'panini 40',   carboInt:60,  malto:25,  consum:0.8 },
+  { name:'Fedaia',    km:100, h:0, min:55, carbo:80,  integrazione:'caramelle 45',carboInt:60,  malto:50,  consum:null },
+  { name:'Agordino',  km:130, h:0, min:50, carbo:80,  integrazione:'',            carboInt:45,  malto:40,  consum:0.7 },
+  { name:'Valles',    km:150, h:1, min:30, carbo:110, integrazione:'gelato 30',   carboInt:30,  malto:70,  consum:null },
+  { name:'Cavalese',  km:185, h:1, min:0,  carbo:80,  integrazione:'gel 20',      carboInt:60,  malto:50,  consum:1.0 },
+  { name:'Casa',      km:230, h:2, min:0,  carbo:160, integrazione:'',            carboInt:0,   malto:100, consum:null },
+];
+
+// ── FOODS (input data) ──
+// Each: { type, grCho, qty, pctCho, grFood, customName }
+let foods = [
+  { type:'barretta', grCho:30, qty:3, pctCho:null, grFood:null, customName:'' },
+];
+
+// ── COMPUTED STATE (recalculated reactively) ──
+let computed = [];
+let debounceTimer = null;
+
+function recalc() {
+  const hyperGr = cfg.bottleVol - cfg.osmGr;       // S18 = 950-120 = 830… wait, original: S18=S15-120=380
+  // Original: S18 = S15 - 120 = 500-120 = 380 (gr iper = water portion weight in the hyper mix ratio)
+  // S19 = 120 / S18 = 120/380 (ratio malto/water for dosing)
+  const grIper   = cfg.planFluid - cfg.osmGr;      // 380
+  const pctIper  = cfg.osmGr / grIper;             // 0.3158
+  const osmPct   = cfg.osmGr / cfg.bottleVol;      // 0.1263
+
+  computed = [];
+  let cumMin = 0, cumTime = 0, cumMalto = 0, cumIper = 0, cumBor = 0;
+
+  segments.forEach((s, i) => {
+    // duration
+    const segMin  = (i === 0) ? s.h * 60 : (s.h * 60) + s.min;  // first row: G=C*60 (no D)
+    cumMin       += segMin;
+    const cumH    = Math.floor(cumMin / 60);
+    const cumM    = cumMin - cumH * 60;
+    const cumTimeDec = cumH + cumM / 60;           // L
+
+    // deltas
+    const prevKm   = i > 0 ? segments[i-1].km : 0;
+    const prevTime = i > 0 ? computed[i-1].cumTime : 0;
+    const dKm      = s.km - prevKm;                // M
+    const dTime    = cumTimeDec - prevTime;         // N
+
+    const avgSpeed = s.km / cumTimeDec;            // I
+    const segSpeed = dTime > 0 ? dKm / dTime : 0; // J
+
+    // nutrition
+    const carboCalc = cfg.carbPerHour * dTime;     // O = carboC
+    cumMalto += s.malto;                           // T (cumulative)
+
+    // bottle
+    const borFrac = s.malto / cfg.osmGr;           // U = malto / 120
+    const refill  = s.consum !== null ? s.consum * pctIper : null;     // W
+    const refillH2O = s.consum !== null ? s.consum - refill : null;    // X
+    const refillMl  = refill !== null ? cfg.bottleVol * refill : null; // Y  (S20 * W)
+    const refillH2OmL = refillH2O !== null ? cfg.bottleVol * refillH2O : null; // Z
+    const fillIper = borFrac / 3;                  // AA = U/3
+    cumIper += fillIper;
+    cumBor  += borFrac;
+
+    computed.push({
+      i, name: s.name, km: s.km,
+      segMin, cumMin, cumH, cumM, cumTimeDec,
+      dKm, dTime, avgSpeed, segSpeed,
+      carboCalc, carbo: s.carbo, integrazione: s.integrazione, carboInt: s.carboInt,
+      malto: s.malto, cumMalto,
+      borFrac, consum: s.consum, refill, refillH2O, refillMl, refillH2OmL,
+      fillIper, cumIper, cumBor
+    });
+  });
+  return { grIper, pctIper, osmPct, cumMalto, cumIper, cumBor };
+}
+
+// ═══════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════
+
+function fmt(n, d=1) { return n == null ? '—' : n.toFixed(d); }
+
+function renderAll() {
+  const meta = recalc();
+  renderHeader(meta);
+  renderConfig();
+  renderTable();
+  renderFoods();
+  renderNutrition(meta);
+  renderBottles(meta);
+  // Charts only render on tab switch or after debounce
+}
+
+function renderAllWithCharts() {
+  renderAll();
+  renderCharts();
+}
+
+// Debounced render function - waits 800ms after last keystroke
+function debouncedRenderAll() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(renderAllWithCharts, 800);
+}
+
+function addFood() {
+  foods.push({ type:'barretta', grCho:30, qty:1, pctCho:null, grFood:null, customName:'' });
+  debouncedRenderAll();
+}
+
+function removeFood(index) {
+  if (foods.length > 1) {
+    foods.splice(index, 1);
+    debouncedRenderAll();
+  }
+}
+
+function renderHeader(meta) {
+  const totalKm = segments[segments.length-1].km;
+  const totalTime = computed[computed.length-1].cumTimeDec;
+  const avgSpeed = totalKm / totalTime;
+  document.getElementById('raceMeta').innerHTML = `
+    <div class="meta-item"><div class="label">Distanza</div><div class="value">${totalKm}<span class="unit">km</span></div></div>
+    <div class="meta-item"><div class="label">Durata Est.</div><div class="value">${computed[computed.length-1].cumH}h ${computed[computed.length-1].cumM}m</div></div>
+    <div class="meta-item"><div class="label">Velocità Media</div><div class="value">${fmt(avgSpeed)}<span class="unit">km/h</span></div></div>
+  `;
+}
+
+function renderConfig() {
+  document.getElementById('configRow').innerHTML = `
+    <div class="config-card"><label>Carbo/h (g)</label><input type="number" value="${cfg.carbPerHour}" oninput="cfg.carbPerHour=+this.value;debouncedRenderAll()"></div>
+    <div class="config-card"><label>Fluido Piano (ml)</label><input type="number" value="${cfg.planFluid}" oninput="cfg.planFluid=+this.value;debouncedRenderAll()"></div>
+    <div class="config-card"><label>Vol. Borraccia (ml)</label><input type="number" value="${cfg.bottleVol}" oninput="cfg.bottleVol=+this.value;debouncedRenderAll()"></div>
+    <div class="config-card"><label>Osm Gr (g)</label><input type="number" value="${cfg.osmGr}" oninput="cfg.osmGr=+this.value;debouncedRenderAll()"></div>
+    <div class="config-card"><label>Sciroppo Sugar %</label><input type="number" value="${cfg.siroSugar}" oninput="cfg.siroSugar=+this.value;debouncedRenderAll()"></div>
+  `;
+}
+
+function renderTable() {
+  const totalKm = segments[segments.length-1].km;
+  let hdr = `<thead><tr>
+    <th style="text-align:left">Tratto</th>
+    <th>km</th><th>h</th><th>min</th>
+    <th class="col-div">Seg min</th><th>Tot min</th>
+    <th class="col-div">Ore</th><th>Min</th><th>Time (h)</th>
+    <th class="col-div">∆ km</th><th>∆ time</th>
+    <th class="col-div">Vel. Media</th><th>Vel. Tratto</th>
+    <th class="col-div">CarboCalc</th><th>Carbo</th><th>Malto (g)</th><th>Borr. fraz.</th>
+  </tr></thead>`;
+
+  let rows = computed.map((c,i) => {
+    const pct = (c.km / totalKm * 100).toFixed(0);
+    return `<tr>
+      <td><input type="text" value="${c.name}" oninput="segments[${i}].name=this.value;debouncedRenderAll()"></td>
+      <td><input type="number" value="${segments[i].km}" oninput="segments[${i}].km=+this.value;debouncedRenderAll()"></td>
+      <td><input type="number" value="${segments[i].h}" oninput="segments[${i}].h=+this.value;debouncedRenderAll()"></td>
+      <td><input type="number" value="${segments[i].min}" oninput="segments[${i}].min=+this.value;debouncedRenderAll()"></td>
+      <td class="col-div calc">${c.segMin}</td>
+      <td class="calc">${c.cumMin}</td>
+      <td class="col-div calc">${c.cumH}</td>
+      <td class="calc">${c.cumM}</td>
+      <td class="calc">${fmt(c.cumTimeDec)}</td>
+      <td class="col-div calc">${c.dKm}</td>
+      <td class="calc">${fmt(c.dTime)}</td>
+      <td class="col-div calc speed">${fmt(c.avgSpeed)}</td>
+      <td class="calc speed">${fmt(c.segSpeed)}</td>
+      <td class="col-div calc carb">${fmt(c.carboCalc)}</td>
+      <td><input type="number" value="${segments[i].carbo}" oninput="segments[${i}].carbo=+this.value;debouncedRenderAll()"></td>
+      <td><input type="number" value="${segments[i].malto}" oninput="segments[${i}].malto=+this.value;debouncedRenderAll()"></td>
+      <td class="calc bor">${fmt(c.borFrac,2)}</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('segTable').innerHTML = hdr + `<tbody>${rows}</tbody>`;
+}
+
+function renderFoods() {
+  const foodTypes = ['barretta', 'gel', 'caramelle', 'panino', 'banana', 'altro'];
+  let hdr = `<thead><tr>
+    <th style="text-align:left">Alimento</th>
+    <th>gr CHO/unità</th>
+    <th>Quantità</th>
+    <th class="col-div">% CHO</th>
+    <th>gr Alimento</th>
+    <th class="col-div">CHO Calcolato</th>
+    <th style="width:120px">Azioni</th>
+  </tr></thead>`;
+
+  let rows = foods.map((f, i) => {
+    const calcCho = f.grFood !== null && f.pctCho !== null ? (f.grFood * f.pctCho / 100) : (f.grCho * f.qty);
+    const canRemove = foods.length > 1;
+    const isCustom = f.type === 'altro';
+    return `<tr>
+      <td>
+        <select onchange="foods[${i}].type=this.value;debouncedRenderAll()" class="food-select">
+          ${foodTypes.map(t => `<option value="${t}" ${f.type === t ? 'selected' : ''}>${t}</option>`).join('')}
+        </select>
+        ${isCustom ? `<input type="text" placeholder="Nome custom" value="${f.customName || ''}" oninput="foods[${i}].customName=this.value;debouncedRenderAll()" style="width:100%; margin-top:2px; font-size:0.7rem; padding:2px 4px;">` : ''}
+      </td>
+      <td><input type="number" step="0.1" value="${f.grCho}" oninput="foods[${i}].grCho=+this.value;debouncedRenderAll()"></td>
+      <td><input type="number" value="${f.qty}" oninput="foods[${i}].qty=+this.value;debouncedRenderAll()"></td>
+      <td class="col-div"><input type="number" step="0.1" value="${f.pctCho || ''}" placeholder="—" oninput="foods[${i}].pctCho=this.value?+this.value:null;debouncedRenderAll()"></td>
+      <td><input type="number" step="0.1" value="${f.grFood || ''}" placeholder="—" oninput="foods[${i}].grFood=this.value?+this.value:null;debouncedRenderAll()"></td>
+      <td class="col-div calc">${fmt(calcCho, 1)}</td>
+      <td style="text-align:center">
+        <button onclick="addFood()" style="background:var(--accent4); color:#0a0e1a; border:none; border-radius:4px; padding:4px 8px; font-size:0.7rem; cursor:pointer; margin-right:4px;">+</button>
+        <button onclick="removeFood(${i})" ${canRemove ? '' : 'disabled'} style="background:${canRemove ? 'var(--accent3)' : 'var(--surface3)'}; color:${canRemove ? '#0a0e1a' : 'var(--text-muted)'}; border:none; border-radius:4px; padding:4px 8px; font-size:0.7rem; cursor:${canRemove ? 'pointer' : 'not-allowed'};">−</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Calcola il totale CHO
+  const totalCho = foods.reduce((sum, f) => {
+    const calcCho = f.grFood !== null && f.pctCho !== null ? (f.grFood * f.pctCho / 100) : (f.grCho * f.qty);
+    return sum + calcCho;
+  }, 0);
+
+  document.getElementById('foodTable').innerHTML = hdr + `<tbody>${rows}</tbody>`;
+  document.getElementById('foodSummary').innerHTML = `
+    <div class="food-total-card">
+      <div class="total-cho-value">${fmt(totalCho, 1)}</div>
+      <div class="total-cho-label">CHO Totali Disponibili (g)</div>
+    </div>
+  `;
+}
+
+function renderNutrition(meta) {
+  const colors = ['#00e5ff','#7c3aed','#f43f5e','#10b981','#f59e0b','#06b6d4','#8b5cf6','#ec4899'];
+  let html = computed.map((c,i) => `
+    <div class="nut-card" style="animation-delay:${i*0.06}s">
+      <div class="card-glow" style="background:${colors[i%colors.length]}"></div>
+      <div class="nt-header">
+        <span class="nt-name">${c.name}</span>
+        <span class="nt-km">${c.km} km</span>
+      </div>
+      ${c.integrazione ? `<span class="nt-food">🍫 ${c.integrazione}</span>` : ''}
+      <div class="nt-stats">
+        <div class="nt-stat"><div class="st-label">Carbo Calc</div><div class="st-val accent5">${fmt(c.carboCalc)} g</div></div>
+        <div class="nt-stat"><div class="st-label">Carbo Piano</div><div class="st-val accent">${c.carbo} g</div></div>
+        <div class="nt-stat"><div class="st-label">Carbo Int</div><div class="st-val accent2">${c.carboInt} g</div></div>
+        <div class="nt-stat"><div class="st-label">Maltodestrina</div><div class="st-val accent4">${c.malto} g</div></div>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('nutGrid').innerHTML = html;
+
+  // KPI summary
+  const totCarboCalc = computed.reduce((a,c) => a + c.carboCalc, 0);
+  const totCarboPiano = segments.reduce((a,s) => a + s.carbo, 0);
+  const totCarboInt = segments.reduce((a,s) => a + s.carboInt, 0);
+  const totMalto = segments.reduce((a,s) => a + s.malto, 0);
+  const totCarboAll = totCarboInt + totMalto;
+  const maltoReq = totCarboPiano - totCarboInt;       // R13
+  const dScir = ((totMalto/2)*(cfg.siroSugar/100)) + (totMalto/2); // S13
+  const totBor = computed[computed.length-1].cumBor;
+
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi-card"><div class="kpi-val">${fmt(totCarboCalc,0)}</div><div class="kpi-label">Carbo Calcolati (g)</div></div>
+    <div class="kpi-card"><div class="kpi-val">${totCarboPiano}</div><div class="kpi-label">Carbo Piano (g)</div></div>
+    <div class="kpi-card"><div class="kpi-val">${totCarboInt}</div><div class="kpi-label">Carbo Integrazione (g)</div></div>
+    <div class="kpi-card"><div class="kpi-val">${totMalto}</div><div class="kpi-label">Maltodestrina Tot (g)</div></div>
+    <div class="kpi-card"><div class="kpi-val">${totCarboAll}</div><div class="kpi-label">Carbo Totali (g)</div></div>
+    <div class="kpi-card"><div class="kpi-val">${maltoReq}</div><div class="kpi-label">Malto Richiesto (g)</div></div>
+    <div class="kpi-card"><div class="kpi-val">${fmt(dScir,1)}</div><div class="kpi-label">∆ Sciroppo (g)</div></div>
+    <div class="kpi-card"><div class="kpi-val">${fmt(totBor,2)}</div><div class="kpi-label">Borracce Tot</div></div>
+  `;
+}
+
+function renderBottles(meta) {
+  const grIper  = cfg.planFluid - cfg.osmGr;
+  const pctIper = cfg.osmGr / grIper;
+  const osmPct  = cfg.osmGr / cfg.bottleVol;
+
+  document.getElementById('bottleConfig').innerHTML = `
+    <div class="bottle-card">
+      <h4>⚗️ Borraccia Iper (concentrata)</h4>
+      <div class="bc-row"><span class="bc-label">Volume totale</span><span class="bc-val">${cfg.bottleVol} ml</span></div>
+      <div class="bc-row"><span class="bc-label">Gr Maltodestrina</span><span class="bc-val amber">${cfg.osmGr} g</span></div>
+      <div class="bc-row"><span class="bc-label">Gr acqua (iper)</span><span class="bc-val purple">${grIper} g</span></div>
+      <div class="bc-row"><span class="bc-label">Rapporto malto/acqua</span><span class="bc-val">${fmt(pctIper,3)}</span></div>
+    </div>
+    <div class="bottle-card">
+      <h4>💧 Borraccia Easy (osmotica)</h4>
+      <div class="bc-row"><span class="bc-label">Volume totale</span><span class="bc-val">${cfg.bottleVol} ml</span></div>
+      <div class="bc-row"><span class="bc-label">Gr Maltodestrina</span><span class="bc-val green">${cfg.osmGr} g</span></div>
+      <div class="bc-row"><span class="bc-label">% Osm</span><span class="bc-val">${fmt(osmPct*100,2)}%</span></div>
+    </div>
+    <div class="bottle-card">
+      <h4>📊 Macro Nutrienti</h4>
+      <div class="bc-row"><span class="bc-label">Sciroppo sugar %</span><span class="bc-val amber">${cfg.siroSugar}%</span></div>
+      <div class="bc-row"><span class="bc-label">Caramelle sugar %</span><span class="bc-val">75%</span></div>
+    </div>
+  `;
+
+  // Per-segment bottle cards
+  let html = computed.map((c,i) => {
+    const hasConsum = c.consum !== null;
+    return `
+      <div class="bottle-card" style="animation-delay:${i*0.05}s">
+        <h4>💧 ${c.name} — ${c.km} km</h4>
+        <div class="bc-row"><span class="bc-label">Malto in borraccia</span><span class="bc-val green">${segments[i].malto} g</span></div>
+        <div class="bc-row"><span class="bc-label">Fraz. borraccia (U)</span><span class="bc-val">${fmt(c.borFrac,3)}</span></div>
+        <div class="bc-row"><span class="bc-label">Fill iper (AA)</span><span class="bc-val purple">${fmt(c.fillIper,3)}</span></div>
+        ${hasConsum ? `
+        <div class="bc-row"><span class="bc-label">Consumo borracce</span><span class="bc-val amber">${c.consum}</span></div>
+        <div class="bc-row"><span class="bc-label">Refill iper</span><span class="bc-val">${fmt(c.refill,3)}</span></div>
+        <div class="bc-row"><span class="bc-label">Refill H₂O</span><span class="bc-val">${fmt(c.refillH2O,3)}</span></div>
+        <div class="bc-row"><span class="bc-label">ml iper consumati</span><span class="bc-val green">${fmt(c.refillMl,0)} ml</span></div>
+        <div class="bc-row"><span class="bc-label">ml H₂O consumati</span><span class="bc-val">${fmt(c.refillH2OmL,0)} ml</span></div>
+        ` : '<div class="bc-row"><span class="bc-label" style="color:var(--accent3)">Nessun consumo registrato</span></div>'}
+      </div>`;
+  }).join('');
+  document.getElementById('bottleCards').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════
+// ECHARTS
+// ═══════════════════════════════════════════════════════
+let chartInstances = {};
+
+function renderCharts() {
+  const names  = computed.map(c => c.name);
+  const segSpd = computed.map(c => +c.segSpeed.toFixed(1));
+  const avgSpd = computed.map(c => +c.avgSpeed.toFixed(1));
+  const carbCalc = computed.map(c => +c.carboCalc.toFixed(1));
+  const carbPlan = segments.map(s => s.carbo);
+  const maltos   = segments.map(s => s.malto);
+  const borFracs = computed.map(c => +c.borFrac.toFixed(2));
+  const cumBors  = computed.map(c => +c.cumBor.toFixed(2));
+  const cumTimes = computed.map(c => +c.cumTimeDec.toFixed(2));
+  const dTimes   = computed.map(c => +c.dTime.toFixed(2));
+
+  const baseText = { color:'#64748b', fontSize:11 };
+  const baseAxis = { axisLabel:{ color:'#64748b', fontSize:10 }, axisLine:{ lineStyle:{ color:'#243044' }}, splitLine:{ lineStyle:{ color:'#1a2236' }}};
+
+  // ── Speed ──
+  initChart('chartSpeed', {
+    tooltip:{ trigger:'axis', backgroundColor:'#1a2236', borderColor:'#243044', textStyle:{ color:'#e2e8f0' }},
+    legend:{ textStyle:baseText, left:'center', top:4 },
+    grid:{ top:36, bottom:28, left:40, right:20 },
+    xAxis:{ ...baseAxis, data:names, type:'category' },
+    yAxis:{ ...baseAxis, type:'value', name:'km/h', nameTextStyle:baseText },
+    series:[
+      { name:'Tratto', type:'bar', data:segSpd, barWidth:28,
+        itemStyle:{ borderRadius:[6,6,0,0], color:'#00e5ff' },
+        label:{ show:true, position:'top', color:'#00e5ff', fontSize:11, fontWeight:600 }
+      },
+      { name:'Media Cumulativa', type:'line', data:avgSpd, smooth:true,
+        lineStyle:{ color:'#f59e0b', width:2.5 },
+        itemStyle:{ color:'#f59e0b' },
+        symbol:'circle', symbolSize:6
+      }
+    ]
+  });
+
+  // ── Carbs ──
+  initChart('chartCarbs', {
+    tooltip:{ trigger:'axis', backgroundColor:'#1a2236', borderColor:'#243044', textStyle:{ color:'#e2e8f0' }},
+    legend:{ textStyle:baseText, left:'center', top:4 },
+    grid:{ top:36, bottom:28, left:40, right:20 },
+    xAxis:{ ...baseAxis, data:names, type:'category' },
+    yAxis:{ ...baseAxis, type:'value', name:'g', nameTextStyle:baseText },
+    series:[
+      { name:'Calcolati (80g/h)', type:'bar', data:carbCalc, barWidth:20, barGap:'-100%',
+        itemStyle:{ borderRadius:[4,4,0,0], color:'rgba(245,158,11,0.4)' }
+      },
+      { name:'Piano', type:'bar', data:carbPlan, barWidth:20,
+        itemStyle:{ borderRadius:[4,4,0,0], color:'#f59e0b' }
+      },
+      { name:'Malto', type:'line', data:maltos, smooth:true,
+        lineStyle:{ color:'#10b981', width:2.5 },
+        itemStyle:{ color:'#10b981' },
+        symbol:'circle', symbolSize:6
+      }
+    ]
+  });
+
+  // ── Bottle consumption ──
+  initChart('chartBottle', {
+    tooltip:{ trigger:'axis', backgroundColor:'#1a2236', borderColor:'#243044', textStyle:{ color:'#e2e8f0' }},
+    legend:{ textStyle:baseText, left:'center', top:4 },
+    grid:{ top:36, bottom:28, left:40, right:20 },
+    xAxis:{ ...baseAxis, data:names, type:'category' },
+    yAxis:{ ...baseAxis, type:'value', name:'Borracce', nameTextStyle:baseText },
+    series:[
+      { name:'Fraz. Borraccia', type:'bar', data:borFracs, barWidth:28,
+        itemStyle:{ borderRadius:[6,6,0,0],
+          color: function(p){ const v=p.value; return v>0.7?'#f43f5e':v>0.4?'#f59e0b':'#10b981'; }
+        },
+        label:{ show:true, position:'top', color:'#e2e8f0', fontSize:10 }
+      },
+      { name:'Cumulativa', type:'line', data:cumBors, smooth:true,
+        lineStyle:{ color:'#7c3aed', width:2.5 },
+        itemStyle:{ color:'#7c3aed' },
+        symbol:'circle', symbolSize:6
+      }
+    ]
+  });
+
+  // ── Time profile ──
+  initChart('chartTime', {
+    tooltip:{ trigger:'axis', backgroundColor:'#1a2236', borderColor:'#243044', textStyle:{ color:'#e2e8f0' }},
+    legend:{ textStyle:baseText, left:'center', top:4 },
+    grid:{ top:36, bottom:28, left:40, right:20 },
+    xAxis:{ ...baseAxis, data:names, type:'category' },
+    yAxis:[
+      { ...baseAxis, type:'value', name:'Tempo Cum. (h)', nameTextStyle:baseText },
+      { ...baseAxis, type:'value', name:'∆ Tempo (h)', nameTextStyle:{ ...baseText, color:'#f43f5e' }, position:'right' }
+    ],
+    series:[
+      { name:'Tempo Cumulativo', type:'line', data:cumTimes, smooth:true,
+        lineStyle:{ color:'#00e5ff', width:3 },
+        itemStyle:{ color:'#00e5ff' },
+        areaStyle:{ color:{ type:'linear', x:0, y:0, x2:0, y2:1,
+          colorStops:[{ offset:0, color:'rgba(0,229,255,0.25)' },{ offset:1, color:'rgba(0,229,255,0)' }]
+        }},
+        symbol:'circle', symbolSize:6
+      },
+      { name:'∆ Tempo Tratto', type:'bar', data:dTimes, barWidth:22, yAxisIndex:1,
+        itemStyle:{ borderRadius:[4,4,0,0], color:'rgba(244,63,94,0.6)' }
+      }
+    ]
+  });
+}
+
+function initChart(id, option) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (chartInstances[id]) { chartInstances[id].dispose(); }
+  const chart = echarts.init(el);
+  chart.setOption(option);
+  chartInstances[id] = chart;
+  window.addEventListener('resize', () => chart.resize());
+}
+
+// ═══════════════════════════════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════════════════════════════
+function switchTab(name) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    if (b.textContent.toLowerCase().includes(name === 'segments' ? 'tratti' : name === 'foods' ? 'alimenti' : name === 'nutrition' ? 'nutrizione' : name === 'bottles' ? 'borracce' : 'grafici'))
+      b.classList.add('active');
+  });
+  if (name === 'charts') setTimeout(renderCharts, 100);
+}
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+// Fix typo in carbs chart series reference
+window.onload = () => {
+  renderAllWithCharts();
+};
+</script>
+</body>
+</html>
