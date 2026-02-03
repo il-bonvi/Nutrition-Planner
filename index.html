@@ -201,10 +201,11 @@ body {
 /* food table editable cells */
 .food-table input,
 .food-table select {
-  width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:4px;
-  color:var(--text); font-family:'JetBrains Mono',monospace; font-size:0.82rem;
-  text-align:center; padding:4px 6px; outline:none; transition:.2s;
+  width:100%; background:transparent; border:none; color:var(--text);
+  font-family:'JetBrains Mono',monospace; font-size:0.82rem;
+  text-align:center; padding:3px 0; outline:none; transition:.2s;
   appearance:none; -moz-appearance:none; -webkit-appearance:none;
+  -moz-appearance:textfield; appearance:textfield;
 }
 .food-table .food-select {
   background:var(--surface2) !important; text-align:left; font-family:'Outfit',sans-serif;
@@ -220,11 +221,11 @@ body {
   padding:4px 6px !important;
 }
 .food-table input:focus,
-.food-table select:focus { background:rgba(244,63,94,0.08); border-color:var(--accent3); box-shadow:0 0 8px rgba(244,63,94,0.2); }
+.food-table select:focus { background:rgba(0,229,255,0.08); border-radius:6px; }
 .food-table input[type=text] {
   text-align:left; font-family:'Outfit',sans-serif; font-weight:500;
-  background:var(--surface3); border:1px solid var(--border); border-radius:3px;
-  color:var(--text); font-size:0.75rem; padding:2px 4px; margin-top:2px;
+  background:transparent; border:none; border-radius:0;
+  color:var(--text); font-size:0.75rem; padding:2px 0; margin-top:2px;
 }
 .food-table input::-webkit-outer-spin-button,
 .food-table input::-webkit-inner-spin-button { -webkit-appearance:none; }
@@ -459,7 +460,7 @@ body {
 
 <!-- TAB: FOODS -->
 <div class="tab-panel" id="tab-foods">
-  <div class="section-title"><span class="dot" style="background:var(--accent3)"></span>Solidi Disponibili</div>
+  <div class="section-title"><span class="dot" style="background:var(--accent3)"></span>Solidi Disponibili <span onclick="showSolidiDialog()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></div>
 
   <div class="food-instructions">
     <div class="instruction-card">
@@ -669,6 +670,32 @@ body {
   </div>
 </div>
 
+<div class="modal-overlay" id="solidiModal">
+  <div class="modal-dialog">
+    <h3>🍽️ Cosa sono i Solidi?</h3>
+    <p>I solidi comprendono tutti gli alimenti che <strong>NON</strong> vengono sciolti nella borraccia.</p>
+    
+    <div style="margin:20px 0; padding:16px; background:var(--surface); border-radius:10px; border:1px solid var(--border);">
+      <h4 style="margin:0 0 12px 0; color:var(--accent);">📦 Esempi di Solidi</h4>
+      <div style="display:grid; gap:12px; font-size:0.85rem;">
+        <div><strong>🍯 Gel:</strong> Anche se liquidi, vengono considerati solidi perché assunti direttamente</div>
+        <div><strong>🍫 Barrette energetiche:</strong> Solidi da masticare</div>
+        <div><strong>🍌 Frutta:</strong> Banana, datteri, ecc.</div>
+        <div><strong>🍪 Biscotti e dolci:</strong> Qualsiasi alimento solido</div>
+        <div><strong>🥖 Pane e carboidrati solidi:</strong> Tutto ciò che non va in borraccia</div>
+      </div>
+    </div>
+
+    <p style="font-size:0.8rem; color:var(--accent4); margin-top:16px; padding:10px; background:rgba(16,185,129,.1); border-radius:6px;">
+      <strong>💡 Suggerimento:</strong> Per i carboidrati liquidi (sciolti in acqua) vai alla schermata <strong>"💧 Borracce"</strong>.
+    </p>
+
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-close" onclick="closeSolidiDialog()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════
 // DATA MODEL — faithfully ported from NUT_LUNGO.xlsx
@@ -703,9 +730,7 @@ let nutritionView = 'cards'; // 'cards' or 'grid'
 // ── FOODS (input data) ──
 // Each: { type, grCho, qty, pctCho, grFood, customName }
 let foods = [
-  { type:'barretta', grCho:30, qty:3, pctCho:null, grFood:null, customName:'' },
-  { type:'gel', grCho:25, qty:2, pctCho:null, grFood:null, customName:'' },
-  { type:'banana', pctCho:23, qty:1, grCho:null, grFood:120, customName:'' },
+  { type:'barretta', grCho:null, qty:1, pctCho:null, grFood:null, customName:'' },
 ];
 
 // ── AVAILABLE FOOD INSTANCES ──
@@ -772,8 +797,8 @@ function recalc() {
     const dKm      = s.km - prevKm;                // M
     const dTime    = cumTimeDec - prevTime;         // N
 
-    const avgSpeed = dTime > 0 ? dKm / dTime : 0;  // I - velocità del segmento corrente
-    const segSpeed = dTime > 0 ? dKm / dTime : 0; // J - stessa cosa per ora
+    const avgSpeed = cumTimeDec > 0 ? s.km / cumTimeDec : 0;  // velocità media cumulativa fino a questo punto
+    const segSpeed = dTime > 0 ? dKm / dTime : 0; // velocità del segmento corrente
 
     // nutrition
     const carboCalc = cfg.carbPerHour * dTime;     // O = carboC
@@ -1205,7 +1230,7 @@ function renderFoods() {
         <select onchange="foods[${i}].type=this.value;debouncedRenderAll()" class="food-select">
           ${foodTypes.map(t => `<option value="${t}" ${f.type === t ? 'selected' : ''}>${t}</option>`).join('')}
         </select>
-        ${isCustom ? `<input type="text" placeholder="Nome custom" value="${f.customName || ''}" oninput="foods[${i}].customName=this.value;debouncedRenderAll()" style="width:100%; margin-top:2px; font-size:0.7rem; padding:2px 4px;">` : ''}
+        ${isCustom ? `<input type="text" placeholder="✏️ Scrivi il nome dell'alimento..." value="${f.customName || ''}" oninput="foods[${i}].customName=this.value;debouncedRenderAll()" style="width:100%; margin-top:4px; font-size:0.75rem; padding:4px 6px; background:transparent; border:none; color:var(--text); font-family:'Outfit',sans-serif; font-weight:500;">` : ''}
       </td>
       <td class="col-div"><input type="number" step="0.1" value="${f.grCho || ''}" placeholder="es. 30" oninput="foods[${i}].grCho=this.value?+this.value:null; foods[${i}].pctCho=null; foods[${i}].grFood=null; debouncedRenderAll()"></td>
       <td style="color:var(--accent2); font-weight:600; font-size:0.8rem; text-align:center; background: rgba(124,58,237,0.05);">OR</td>
@@ -1618,6 +1643,14 @@ function showChoBottleDialog() {
 
 function closeChoBottleDialog() {
   document.getElementById('choBottleModal').classList.remove('active');
+}
+
+function showSolidiDialog() {
+  document.getElementById('solidiModal').classList.add('active');
+}
+
+function closeSolidiDialog() {
+  document.getElementById('solidiModal').classList.remove('active');
 }
 
 function updateCarbReminder() {
