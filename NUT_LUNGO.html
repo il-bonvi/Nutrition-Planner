@@ -282,24 +282,25 @@ body {
 .bottle-card .bc-row .bc-val.green  { color:var(--accent4); }
 .bottle-card .bc-row .bc-val.amber  { color:var(--accent5); }
 
-/* ── FOOD SUMMARY ── */
-.food-summary-row {
-  display:flex; justify-content:center; margin-top:8px;
+/* ── FOOD INSTRUCTIONS ── */
+.food-instructions {
+  display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:24px;
 }
-.food-total-card {
-  background:var(--surface); border:1px solid var(--border); border-radius:16px;
-  padding:24px 20px; text-align:center; transition:.3s; min-width:200px;
-  animation: fadeUp 0.55s cubic-bezier(.22,1,.36,1) both;
+.instruction-card {
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:16px; text-align:center; animation: fadeUp 0.5s cubic-bezier(.22,1,.36,1) both;
 }
-.food-total-card:hover { transform:translateY(-2px); box-shadow:0 6px 24px rgba(0,0,0,.25); }
-.food-total-card .total-cho-value {
-  font-size:2.2rem; font-weight:800; font-family:'JetBrains Mono',monospace;
-  background: linear-gradient(135deg, var(--accent5), var(--accent3));
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;
-  margin-bottom:4px;
+.instruction-card:nth-child(1) { animation-delay:.1s }
+.instruction-card:nth-child(2) { animation-delay:.2s }
+.instruction-card h5 {
+  font-size:0.85rem; font-weight:600; color:var(--accent3); margin-bottom:8px;
+  text-transform:uppercase; letter-spacing:1px;
 }
-.food-total-card .total-cho-label {
-  font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1.2px;
+.instruction-card p {
+  font-size:0.8rem; color:var(--text); margin-bottom:6px;
+}
+.instruction-card small {
+  font-size:0.7rem; color:var(--text-muted); font-family:'JetBrains Mono',monospace;
 }
 
 /* ── CHARTS ── */
@@ -321,6 +322,15 @@ body {
 .bottle-visual-wrap { display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin-top:10px; }
 .bottle-svg-wrap { text-align:center; }
 .bottle-svg-wrap label { font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; display:block; margin-top:8px; }
+
+/* ── FOOTER ── */
+.tab-footer {
+  margin-top:48px; padding-top:24px; border-top:1px solid var(--border);
+  text-align:center; font-size:0.7rem; color:var(--text-muted);
+  animation: fadeUp 0.5s cubic-bezier(.22,1,.36,1) both;
+}
+.tab-footer a { color:var(--accent); text-decoration:none; transition:.2s; }
+.tab-footer a:hover { color:var(--accent2); text-decoration:underline; }
 
 /* ── RESPONSIVE ── */
 @media(max-width:600px) {
@@ -382,14 +392,30 @@ body {
 <!-- TAB: SEGMENTS -->
 <div class="tab-panel active" id="tab-segments">
   <div class="table-scroll"><table class="seg-table" id="segTable"></table></div>
+  <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
 <!-- TAB: FOODS -->
 <div class="tab-panel" id="tab-foods">
   <div class="section-title"><span class="dot" style="background:var(--accent3)"></span>Alimenti Disponibili</div>
+
+  <div class="food-instructions">
+    <div class="instruction-card">
+      <h5>🍫 CHO Noti</h5>
+      <p>Compila <strong>gr CHO/unità</strong> e <strong>Quantità</strong></p>
+      <small>Es: Barretta = 30g CHO × 3 barrette = 90g CHO</small>
+    </div>
+    <div class="instruction-card">
+      <h5>🥖 Custom</h5>
+      <p>Compila <strong>% CHO</strong> e <strong>gr Alimento</strong></p>
+      <small>Es: 100g caramelle al 75% = 75g CHO</small>
+    </div>
+  </div>
+
   <div class="table-scroll"><table class="food-table" id="foodTable"></table></div>
   <div class="section-title" style="margin-top:30px"><span class="dot" style="background:var(--accent5)"></span>Riepilogo CHO</div>
   <div class="food-summary-row" id="foodSummary"></div>
+  <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
 <!-- TAB: NUTRITION -->
@@ -398,6 +424,7 @@ body {
   <div class="nut-grid" id="nutGrid"></div>
   <div class="section-title" style="margin-top:30px"><span class="dot" style="background:var(--accent4)"></span>Riepilogo Carboidrati</div>
   <div class="kpi-row" id="kpiRow"></div>
+  <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
 <!-- TAB: BOTTLES -->
@@ -406,6 +433,7 @@ body {
   <div class="bottle-row" id="bottleConfig"></div>
   <div class="section-title" style="margin-top:28px"><span class="dot" style="background:var(--accent)"></span>Piano Idratazione per Tratto</div>
   <div class="bottle-row" id="bottleCards"></div>
+  <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
 <!-- TAB: CHARTS -->
@@ -416,6 +444,7 @@ body {
     <div class="chart-box"><h4>Consumo Borraccia per Tratto</h4><div class="echarts-container" id="chartBottle"></div></div>
     <div class="chart-box"><h4>Profilo Temporale della Gara</h4><div class="echarts-container" id="chartTime"></div></div>
   </div>
+  <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
 </div><!-- /wrapper -->
@@ -450,7 +479,7 @@ let segments = [
 // ── FOODS (input data) ──
 // Each: { type, grCho, qty, pctCho, grFood, customName }
 let foods = [
-  { type:'barretta', grCho:30, qty:3, pctCho:null, grFood:null, customName:'' },
+  { type:'barretta', grCho:null, qty:1, pctCho:null, grFood:null, customName:'' },
 ];
 
 // ── COMPUTED STATE (recalculated reactively) ──
@@ -541,7 +570,7 @@ function debouncedRenderAll() {
 }
 
 function addFood() {
-  foods.push({ type:'barretta', grCho:30, qty:1, pctCho:null, grFood:null, customName:'' });
+  foods.push({ type:'barretta', grCho:null, qty:1, pctCho:null, grFood:null, customName:'' });
   debouncedRenderAll();
 }
 
@@ -615,16 +644,28 @@ function renderFoods() {
   const foodTypes = ['barretta', 'gel', 'caramelle', 'panino', 'banana', 'altro'];
   let hdr = `<thead><tr>
     <th style="text-align:left">Alimento</th>
-    <th>gr CHO/unità</th>
-    <th>Quantità</th>
-    <th class="col-div">% CHO</th>
+    <th class="col-div">gr CHO/unità</th>
+    <th>oppure</th>
+    <th>% CHO</th>
     <th>gr Alimento</th>
-    <th class="col-div">CHO Calcolato</th>
+    <th class="col-div">Quantità</th>
+    <th>CHO Totale</th>
     <th style="width:120px">Azioni</th>
   </tr></thead>`;
 
   let rows = foods.map((f, i) => {
-    const calcCho = f.grFood !== null && f.pctCho !== null ? (f.grFood * f.pctCho / 100) : (f.grCho * f.qty);
+    // Logica di calcolo:
+    // Metodo 1: gr CHO/unità × Quantità
+    // Metodo 2: (gr Alimento × % CHO / 100) × Quantità
+    let calcCho = 0;
+    const qty = f.qty || 1; // Se qty non è compilato, usa 1
+
+    if (f.grCho !== null && f.grCho !== '') {
+      calcCho = f.grCho * qty;
+    } else if (f.pctCho !== null && f.grFood !== null && f.grFood !== '') {
+      calcCho = (f.grFood * f.pctCho / 100) * qty;
+    }
+
     const canRemove = foods.length > 1;
     const isCustom = f.type === 'altro';
     return `<tr>
@@ -634,11 +675,12 @@ function renderFoods() {
         </select>
         ${isCustom ? `<input type="text" placeholder="Nome custom" value="${f.customName || ''}" oninput="foods[${i}].customName=this.value;debouncedRenderAll()" style="width:100%; margin-top:2px; font-size:0.7rem; padding:2px 4px;">` : ''}
       </td>
-      <td><input type="number" step="0.1" value="${f.grCho}" oninput="foods[${i}].grCho=+this.value;debouncedRenderAll()"></td>
-      <td><input type="number" value="${f.qty}" oninput="foods[${i}].qty=+this.value;debouncedRenderAll()"></td>
-      <td class="col-div"><input type="number" step="0.1" value="${f.pctCho || ''}" placeholder="—" oninput="foods[${i}].pctCho=this.value?+this.value:null;debouncedRenderAll()"></td>
-      <td><input type="number" step="0.1" value="${f.grFood || ''}" placeholder="—" oninput="foods[${i}].grFood=this.value?+this.value:null;debouncedRenderAll()"></td>
-      <td class="col-div calc">${fmt(calcCho, 1)}</td>
+      <td class="col-div"><input type="number" step="0.1" value="${f.grCho || ''}" placeholder="es. 30" oninput="foods[${i}].grCho=this.value?+this.value:null; foods[${i}].pctCho=null; foods[${i}].grFood=null; debouncedRenderAll()"></td>
+      <td style="color:var(--accent2); font-weight:600; font-size:0.8rem; text-align:center; background: rgba(124,58,237,0.05);">OR</td>
+      <td><input type="number" step="0.1" value="${f.pctCho || ''}" placeholder="es. 75" oninput="foods[${i}].pctCho=this.value?+this.value:null; foods[${i}].grCho=null; debouncedRenderAll()"></td>
+      <td><input type="number" step="0.1" value="${f.grFood || ''}" placeholder="es. 100" oninput="foods[${i}].grFood=this.value?+this.value:null; foods[${i}].grCho=null; debouncedRenderAll()"></td>
+      <td class="col-div"><input type="number" value="${f.qty || ''}" placeholder="es. 3" oninput="foods[${i}].qty=this.value?+this.value:null;debouncedRenderAll()"></td>
+      <td class="calc">${fmt(calcCho, 0)}</td>
       <td style="text-align:center">
         <button onclick="addFood()" style="background:var(--accent4); color:#0a0e1a; border:none; border-radius:4px; padding:4px 8px; font-size:0.7rem; cursor:pointer; margin-right:4px;">+</button>
         <button onclick="removeFood(${i})" ${canRemove ? '' : 'disabled'} style="background:${canRemove ? 'var(--accent3)' : 'var(--surface3)'}; color:${canRemove ? '#0a0e1a' : 'var(--text-muted)'}; border:none; border-radius:4px; padding:4px 8px; font-size:0.7rem; cursor:${canRemove ? 'pointer' : 'not-allowed'};">−</button>
@@ -648,15 +690,21 @@ function renderFoods() {
 
   // Calcola il totale CHO
   const totalCho = foods.reduce((sum, f) => {
-    const calcCho = f.grFood !== null && f.pctCho !== null ? (f.grFood * f.pctCho / 100) : (f.grCho * f.qty);
+    let calcCho = 0;
+    const qty = f.qty || 1;
+    if (f.grCho !== null && f.grCho !== '') {
+      calcCho = f.grCho * qty;
+    } else if (f.pctCho !== null && f.grFood !== null && f.grFood !== '') {
+      calcCho = (f.grFood * f.pctCho / 100) * qty;
+    }
     return sum + calcCho;
   }, 0);
 
   document.getElementById('foodTable').innerHTML = hdr + `<tbody>${rows}</tbody>`;
   document.getElementById('foodSummary').innerHTML = `
-    <div class="food-total-card">
-      <div class="total-cho-value">${fmt(totalCho, 1)}</div>
-      <div class="total-cho-label">CHO Totali Disponibili (g)</div>
+    <div style="text-align:center; padding:16px; font-size:1.1rem; color:var(--text);">
+      <span style="color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.75rem;">CHO Totali Disponibili</span>
+      <div style="font-size:2rem; font-weight:800; font-family:'JetBrains Mono',monospace; background:linear-gradient(135deg, var(--accent5), var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-top:4px;">${fmt(totalCho, 0)} g</div>
     </div>
   `;
 }
