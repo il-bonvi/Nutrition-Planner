@@ -235,12 +235,23 @@ body {
 
 /* ── NUTRITION CARDS ── */
 .nut-grid {
-  display:grid; grid-template-columns:repeat(auto-fit, minmax(220px,1fr)); gap:16px;
   margin-top:8px;
+}
+.nut-grid.cards-view {
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:20px;
+}
+@media (max-width: 768px) {
+  .nut-grid.cards-view {
+    grid-template-columns:1fr;
+    gap:16px;
+  }
+  .nut-card {
+    padding:16px;
+  }
 }
 .nut-card {
   background:var(--surface); border:1px solid var(--border); border-radius:16px;
-  padding:18px; position:relative; overflow:hidden; transition: all .3s;
+  padding:20px; position:relative; overflow:hidden; transition: all .3s;
   animation: scaleIn 0.5s cubic-bezier(.22,1,.36,1) both;
 }
 .nut-card:hover { transform:translateY(-3px); box-shadow:0 8px 32px rgba(0,0,0,.3); border-color:var(--accent); }
@@ -250,14 +261,14 @@ body {
   position:absolute; inset:-40%; border-radius:50%; opacity:.08;
   pointer-events:none; filter:blur(30px);
 }
-.nut-card .nt-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-.nut-card .nt-name { font-weight:700; font-size:1rem; }
-.nut-card .nt-km { font-size:0.7rem; color:var(--text-muted); background:var(--surface2); padding:3px 10px; border-radius:20px; }
+.nut-card .nt-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+.nut-card .nt-name { font-weight:700; font-size:1.1rem; color:var(--text); }
+.nut-card .nt-km { font-size:0.75rem; color:var(--text-muted); background:var(--surface2); padding:4px 12px; border-radius:20px; border:1px solid rgba(148,163,184,0.2); }
 .nut-card .nt-food { font-size:0.78rem; color:var(--accent5); background:rgba(245,158,11,.08); padding:4px 10px; border-radius:8px; display:inline-block; margin-bottom:10px; }
-.nut-card .nt-stats { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-.nt-stat { background:var(--surface2); border-radius:8px; padding:8px 10px; }
-.nt-stat .st-label { font-size:0.62rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; }
-.nt-stat .st-val { font-size:0.92rem; font-weight:600; margin-top:2px; font-family:'JetBrains Mono',monospace; }
+.nut-card .nt-stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.nt-stat { background:var(--surface2); border-radius:10px; padding:12px 14px; border:1px solid rgba(148,163,184,0.2); }
+.nt-stat .st-label { font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:4px; }
+.nt-stat .st-val { font-size:1rem; font-weight:700; font-family:'JetBrains Mono',monospace; }
 .nt-stat .st-val.accent  { color:var(--accent); }
 .nt-stat .st-val.accent2 { color:var(--accent2); }
 .nt-stat .st-val.accent3 { color:var(--accent3); }
@@ -403,6 +414,16 @@ body {
 .tab-btn:hover { border-color:var(--accent); color:var(--text); }
 .tab-btn.active { background:var(--accent); color:#0a0e1a; border-color:var(--accent); font-weight:700; box-shadow:0 0 16px var(--glow); }
 
+.view-selector { display:flex; gap:2px; }
+.view-btn {
+  background:var(--surface2); border:1px solid var(--border); color:var(--text-muted);
+  border-radius:6px; padding:3px; font-size:0.7rem; font-weight:500;
+  cursor:pointer; transition:.25s; font-family:'Outfit',sans-serif;
+  width:24px; height:24px; display:flex; align-items:center; justify-content:center;
+}
+.view-btn:hover { border-color:var(--accent); color:var(--text); }
+.view-btn.active { background:var(--accent); color:#0a0e1a; border-color:var(--accent); font-weight:600; }
+
 .tab-panel { display:none; }
 .tab-panel.active { display:block; animation: fadeIn .35s ease; }
 @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
@@ -422,7 +443,7 @@ body {
 <!-- TABS -->
 <div class="tab-nav">
   <button class="tab-btn active" onclick="switchTab('segments')">📍 Tratti & Tempo</button>
-  <button class="tab-btn" onclick="switchTab('foods')">🍔 Alimenti</button>
+  <button class="tab-btn" onclick="switchTab('foods')">🍔 Solidi</button>
   <button class="tab-btn" onclick="switchTab('config')">⚙️ Configurazione</button>
   <button class="tab-btn" onclick="switchTab('nutrition')">🍜 Nutrizione</button>
   <button class="tab-btn" onclick="switchTab('bottles')">💧 Borracce</button>
@@ -438,7 +459,7 @@ body {
 
 <!-- TAB: FOODS -->
 <div class="tab-panel" id="tab-foods">
-  <div class="section-title"><span class="dot" style="background:var(--accent3)"></span>Alimenti Disponibili</div>
+  <div class="section-title"><span class="dot" style="background:var(--accent3)"></span>Solidi Disponibili</div>
 
   <div class="food-instructions">
     <div class="instruction-card">
@@ -469,9 +490,14 @@ body {
 <!-- TAB: NUTRITION -->
 <div class="tab-panel" id="tab-nutrition">
   <div class="section-title"><span class="dot" style="background:var(--accent5)"></span>Piano Alimentare per Tratto</div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+    <div class="view-selector">
+      <button class="view-btn active" onclick="setNutritionView('cards')" title="Vista Cards">📋</button>
+      <button class="view-btn" onclick="setNutritionView('grid')" title="Vista Grid">⊞</button>
+    </div>
+    <button onclick="autoFillChoPlanned()" style="background:var(--accent2); color:#0a0e1a; border:none; border-radius:6px; padding:6px 12px; font-size:0.75rem; cursor:pointer; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Auto CHO Totale</button>
+  </div>
   <div class="nut-grid" id="nutGrid"></div>
-  <div class="section-title" style="margin-top:30px"><span class="dot" style="background:var(--accent4)"></span>Riepilogo Carboidrati</div>
-  <div class="kpi-row" id="kpiRow"></div>
   <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
@@ -503,6 +529,19 @@ body {
 </div>
 
 </div><!-- /wrapper -->
+
+<!-- FOOD SELECTOR MODAL -->
+<div class="modal-overlay" id="foodSelectorModal" style="display:none;" onclick="closeFoodSelectorModal()">
+  <div class="modal-dialog" style="max-width:500px;" onclick="event.stopPropagation()">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+      <h3 style="margin:0;">🍎 Seleziona Integratore o Alimento</h3>
+      <button onclick="closeFoodSelectorModal()" style="background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-muted); padding:0; line-height:1;">×</button>
+    </div>
+    <div id="foodSelectorContent">
+      <!-- Content will be populated by JavaScript -->
+    </div>
+  </div>
+</div>
 
 <!-- OSM INFO MODAL -->
 <div class="modal-overlay" id="osmModal">
@@ -658,17 +697,52 @@ let segments = [
   { name:'Casa',      km:230, h:2, min:0,  carbo:null, carboInt:0, malto:0, consum:null, foodItems:[] },
 ];
 
+// ── NUTRITION VIEW ──
+let nutritionView = 'cards'; // 'cards' or 'grid'
+
 // ── FOODS (input data) ──
 // Each: { type, grCho, qty, pctCho, grFood, customName }
 let foods = [
-  { type:'barretta', grCho:null, qty:1, pctCho:null, grFood:null, customName:'' },
+  { type:'barretta', grCho:30, qty:3, pctCho:null, grFood:null, customName:'' },
+  { type:'gel', grCho:25, qty:2, pctCho:null, grFood:null, customName:'' },
+  { type:'banana', pctCho:23, qty:1, grCho:null, grFood:120, customName:'' },
 ];
+
+// ── AVAILABLE FOOD INSTANCES ──
+// Array of {foodIndex, instanceId} representing available food units
+let availableFoodInstances = [];
+
+function updateAvailableFoodInstances() {
+  availableFoodInstances = [];
+  foods.forEach((food, foodIndex) => {
+    const qty = food.qty || 1;
+    for (let i = 0; i < qty; i++) {
+      availableFoodInstances.push({ foodIndex, instanceId: i });
+    }
+  });
+  
+  // Remove instances that are already assigned to segments
+  segments.forEach(segment => {
+    if (segment.foodItems) {
+      segment.foodItems.forEach(item => {
+        const instanceIndex = availableFoodInstances.findIndex(inst => 
+          inst.foodIndex === item.foodIndex && inst.instanceId === item.instanceId
+        );
+        if (instanceIndex >= 0) {
+          availableFoodInstances.splice(instanceIndex, 1);
+        }
+      });
+    }
+  });
+}
 
 // ── COMPUTED STATE (recalculated reactively) ──
 let computed = [];
 let debounceTimer = null;
 
 function recalc() {
+  updateAvailableFoodInstances();
+  
   // gr iper: acqua disponibile per la miscela iper (pochè non usiamo più 'planFluid')
   const grIper   = cfg.bottleVol - cfg.osmGr;      // ex: 950 - 120 = 830
   const pctIper  = cfg.osmGr / grIper;             // rapporto malto/acqua
@@ -703,6 +777,10 @@ function recalc() {
 
     // nutrition
     const carboCalc = cfg.carbPerHour * dTime;     // O = carboC
+    // Auto-fill CHO planned if empty
+    if (s.carbo === null || s.carbo === '') {
+      s.carbo = Math.round(carboCalc);
+    }
     cumMalto += s.malto;                           // T (cumulative)
 
     // bottle
@@ -756,25 +834,87 @@ function foodLabel(food) {
   return cho > 0 ? `${name} (${fmt(cho,0)} g CHO)` : `${name} (CHO ?)`;
 }
 
+function showFoodSelectorModal(segIdx) {
+  const modal = document.getElementById('foodSelectorModal');
+  const content = document.getElementById('foodSelectorContent');
+  
+  let html = '<div style="max-height:400px; overflow-y:auto;">';
+  
+  if (availableFoodInstances.length === 0) {
+    html += '<div style="text-align:center; padding:40px; color:var(--text-muted); font-style:italic;">Nessun alimento disponibile</div>';
+  } else {
+    availableFoodInstances.forEach((instance, index) => {
+      const food = foods[instance.foodIndex];
+      const label = foodLabel(food);
+      html += `
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px; margin-bottom:8px; background:var(--surface2); border-radius:8px; cursor:pointer; transition:background .2s;" 
+             onmouseover="this.style.background='var(--surface3)'" 
+             onmouseout="this.style.background='var(--surface2)'"
+             onclick="selectFoodInstance(${segIdx}, ${index})">
+          <span style="font-weight:500;">${label}</span>
+          <span style="color:var(--accent4); font-size:0.8rem;">+</span>
+        </div>
+      `;
+    });
+  }
+  
+  html += '</div>';
+  content.innerHTML = html;
+  modal.style.display = 'flex';
+}
+
+function closeFoodSelectorModal() {
+  document.getElementById('foodSelectorModal').style.display = 'none';
+}
+
+function selectFoodInstance(segIdx, instanceIndex) {
+  const instance = availableFoodInstances[instanceIndex];
+  if (!segments[segIdx].foodItems) segments[segIdx].foodItems = [];
+  
+  // Add the selected instance to the segment
+  segments[segIdx].foodItems.push({
+    foodIndex: instance.foodIndex,
+    instanceId: instance.instanceId
+  });
+  
+  // Close modal and re-render
+  closeFoodSelectorModal();
+  debouncedRenderAll();
+}
+
 function calcSegmentChoIng(seg) {
   if (!seg.foodItems || seg.foodItems.length === 0) return 0;
   return seg.foodItems.reduce((sum, item) => {
-    const food = foods[item.foodIndex];
-    const qty = Number(item.qty) || 1;
+    const foodIndex = (item.foodIndex >= 0 && item.foodIndex < foods.length) ? item.foodIndex : 0;
+    const food = foods[foodIndex];
     const perUnit = calcFoodChoPerUnit(food);
-    return sum + (perUnit * qty);
+    return sum + perUnit; // Each item represents 1 unit
   }, 0);
 }
 
 function addSegmentFood(segIdx) {
   if (!segments[segIdx].foodItems) segments[segIdx].foodItems = [];
-  segments[segIdx].foodItems.push({ foodIndex: 0, qty: 1 });
-  debouncedRenderAll();
+  showFoodSelectorModal(segIdx);
 }
 
 function removeSegmentFood(segIdx, rowIdx) {
   if (!segments[segIdx].foodItems) return;
-  segments[segIdx].foodItems.splice(rowIdx, 1);
+  const removedItem = segments[segIdx].foodItems.splice(rowIdx, 1)[0];
+  // The removed item becomes available again
+  debouncedRenderAll();
+}
+
+function autoFillChoPlanned() {
+  // Fill empty CHO planned fields with corresponding CHO calculated values (rounded to integers)
+  segments.forEach((segment, index) => {
+    if (segment.carbo === null || segment.carbo === '') {
+      // Find the corresponding computed value
+      const computedSegment = computed[index];
+      if (computedSegment && computedSegment.carboCalc) {
+        segment.carbo = Math.round(computedSegment.carboCalc);
+      }
+    }
+  });
   debouncedRenderAll();
 }
 
@@ -887,9 +1027,9 @@ function renderConfig() {
           <div style="font-size:1.8rem; font-weight:800; color:var(--accent5); font-family:'JetBrains Mono',monospace;">${fmt(totalChoCalc, 0)} g</div>
         </div>
         
-        <!-- CHO Alimenti -->
+        <!-- CHO Solidi -->
         <div style="text-align:center; padding:16px; background:var(--surface); border-radius:10px;">
-          <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">CHO Alimenti Solidi</div>
+          <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">CHO Solidi</div>
           <div style="font-size:1.8rem; font-weight:800; color:var(--accent3); font-family:'JetBrains Mono',monospace;">${fmt(totalChoFood, 0)} g</div>
         </div>
 
@@ -1104,104 +1244,159 @@ function renderFoods() {
 function renderNutrition(meta) {
   const colors = ['#00e5ff','#7c3aed','#f43f5e','#10b981','#f59e0b','#06b6d4','#8b5cf6','#ec4899'];
   
-  let html = computed.map((c,i) => {
-    const seg = segments[i];
-    const choPlanned = seg.carbo !== null && seg.carbo !== '' ? Number(seg.carbo) : null;
-    const choIng = calcSegmentChoIng(seg);
-    const choBorr = choPlanned !== null ? Math.max(0, choPlanned - choIng) : 0;
-    
-    // Render mini table degli alimenti selezionati
-    let foodRows = '';
-    if (seg.foodItems && seg.foodItems.length > 0) {
-      foodRows = seg.foodItems.map((item, rowIdx) => {
-        const foodOptions = foods.map((f, fIdx) => 
-          `<option value="${fIdx}" ${item.foodIndex === fIdx ? 'selected' : ''}>${foodLabel(f)}</option>`
-        ).join('');
-        const perUnit = calcFoodChoPerUnit(foods[item.foodIndex]);
-        const totalCho = perUnit * (Number(item.qty) || 1);
-        return `
-          <tr style="font-size:0.75rem;">
-            <td style="padding:4px 0;">
-              <select onchange="segments[${i}].foodItems[${rowIdx}].foodIndex=+this.value;debouncedRenderAll()" style="width:100%; font-size:0.7rem; padding:2px; background:var(--surface2); border:1px solid var(--border); border-radius:4px; color:var(--text);">
-                ${foodOptions}
-              </select>
-            </td>
-            <td style="padding:4px 4px; text-align:center;">
-              <input type="number" value="${item.qty || 1}" min="1" oninput="segments[${i}].foodItems[${rowIdx}].qty=+this.value;debouncedRenderAll()" style="width:50px; font-size:0.7rem; padding:2px; text-align:center; background:var(--surface2); border:1px solid var(--border); border-radius:4px; color:var(--text);">
-            </td>
-            <td style="padding:4px 4px; text-align:right; color:var(--accent3); font-weight:600; font-family:'JetBrains Mono',monospace;">${fmt(totalCho,0)} g</td>
-            <td style="padding:4px 0; text-align:center;">
-              <button onclick="removeSegmentFood(${i}, ${rowIdx})" style="background:var(--accent3); color:#0a0e1a; border:none; border-radius:4px; padding:2px 6px; font-size:0.65rem; cursor:pointer;">✕</button>
-            </td>
-          </tr>
-        `;
-      }).join('');
-    }
-    
-    const foodTableHtml = `
-      <div style="margin-top:12px; padding:10px; background:var(--surface2); border-radius:8px;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-          <span style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px;">Alimenti</span>
-          <button onclick="addSegmentFood(${i})" style="background:var(--accent4); color:#0a0e1a; border:none; border-radius:4px; padding:3px 8px; font-size:0.7rem; cursor:pointer;">+ Aggiungi</button>
+  let html;
+  
+  if (nutritionView === 'cards') {
+    html = computed.map((c,i) => {
+      const seg = segments[i];
+      const choPlanned = seg.carbo !== null && seg.carbo !== '' ? Number(seg.carbo) : null;
+      const choIng = calcSegmentChoIng(seg);
+      const choBorr = choPlanned !== null ? Math.max(0, choPlanned - choIng) : 0;
+      
+      // CHO cumulativo: somma di tutti i carboCalc fino a questo indice incluso
+      const choTotal = computed.slice(0, i + 1).reduce((sum, seg) => sum + seg.carboCalc, 0);
+      
+      // Calculate cumulative CHO planned total
+      const choPlanTotal = segments.slice(0, i + 1).reduce((sum, s) => {
+        const planned = s.carbo !== null && s.carbo !== '' ? Number(s.carbo) : 0;
+        return sum + planned;
+      }, 0);
+      
+      // Render lista degli alimenti selezionati
+      let foodRows = '';
+      if (seg.foodItems && seg.foodItems.length > 0) {
+        foodRows = seg.foodItems.map((item, rowIdx) => {
+          const food = foods[item.foodIndex];
+          const label = foodLabel(food);
+          const perUnit = calcFoodChoPerUnit(food);
+          return `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
+              <span style="font-weight:500; flex:1;">${label}</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="color:var(--accent3); font-weight:600; font-family:'JetBrains Mono',monospace; font-size:0.8rem; min-width:50px; text-align:right;">${fmt(perUnit,0)} g</span>
+                <button onclick="removeSegmentFood(${i}, ${rowIdx})" style="background:var(--accent3); color:#0a0e1a; border:none; border-radius:6px; padding:4px 8px; font-size:0.7rem; cursor:pointer; min-width:24px; height:24px; display:flex; align-items:center; justify-content:center;">×</button>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+      
+      const foodTableHtml = `
+        <div style="margin-top:16px; padding:12px; background:var(--surface2); border-radius:10px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:0.75rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:600;">Solidi</span>
+            <button onclick="addSegmentFood(${i})" style="background:var(--accent4); color:#0a0e1a; border:none; border-radius:6px; padding:4px 10px; font-size:0.7rem; cursor:pointer; font-weight:600;">+ AGGIUNGI</button>
+          </div>
+          ${seg.foodItems && seg.foodItems.length > 0 ? `
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              ${foodRows}
+            </div>
+          ` : '<div style="font-size:0.8rem; color:var(--text-muted); text-align:center; padding:16px 0; font-style:italic;">Nessun alimento selezionato</div>'}
         </div>
-        ${seg.foodItems && seg.foodItems.length > 0 ? `
-          <table style="width:100%; border-collapse:collapse;">
-            <thead>
-              <tr style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase;">
-                <th style="text-align:left; padding:4px 0;">Alimento</th>
-                <th style="text-align:center; padding:4px 4px;">Qtà</th>
-                <th style="text-align:right; padding:4px 4px;">CHO</th>
-                <th style="text-align:center; padding:4px 0; width:30px;"></th>
-              </tr>
-            </thead>
-            <tbody>${foodRows}</tbody>
-          </table>
-        ` : '<div style="font-size:0.75rem; color:var(--text-muted); text-align:center; padding:8px 0;">Nessun alimento selezionato</div>'}
+      `;
+      
+      return `
+        <div class="nut-card" style="animation-delay:${i*0.06}s;">
+          <div class="card-glow" style="background:${colors[i%colors.length]}"></div>
+          <div class="nt-header">
+            <span class="nt-name">${c.name}</span>
+            <span class="nt-km">${c.km} km · ${fmtDuration(c.segMin)}</span>
+          </div>
+          <div class="nt-stats">
+            <div class="nt-stat"><div class="st-label">CHO Calcolato</div><div class="st-val accent5">${fmt(c.carboCalc,0)} g</div></div>
+            <div class="nt-stat"><div class="st-label">CHO Total</div><div class="st-val accent">${fmt(choTotal,0)} g</div></div>
+            <div class="nt-stat"><div class="st-label">CHO Solidi</div><div class="st-val accent3">${fmt(choIng,0)} g</div></div>
+            <div class="nt-stat"><div class="st-label">CHO Borraccia</div><div class="st-val accent4">${choPlanned !== null ? fmt(choBorr,0) + ' g' : '—'}</div></div>
+          </div>
+          <div style="margin-bottom:16px; margin-top:16px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <label style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:600;">CHO Pianificato (g)</label>
+              <div style="font-size:0.7rem; color:var(--accent2); font-weight:600; font-family:'JetBrains Mono',monospace;">Tot: ${fmt(choPlanTotal,0)} g</div>
+            </div>
+            <input type="number" value="${choPlanned !== null ? choPlanned : ''}" placeholder="Inserisci CHO totale" oninput="segments[${i}].carbo=this.value?+this.value:null;debouncedRenderAll()" style="width:100%; font-size:1.2rem; font-weight:700; font-family:'JetBrains Mono',monospace; padding:10px 12px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--accent2); text-align:center;">
+          </div>
+          ${foodTableHtml}
+        </div>
+      `;
+    }).join('');
+  } else if (nutritionView === 'grid') {
+    // Grid view: table with key data
+    const tableRows = computed.map((c,i) => {
+      const seg = segments[i];
+      const choPlanned = seg.carbo !== null && seg.carbo !== '' ? Number(seg.carbo) : null;
+      const choIng = calcSegmentChoIng(seg);
+      const choBorr = choPlanned !== null ? Math.max(0, choPlanned - choIng) : 0;
+      const choTotal = computed.slice(0, i + 1).reduce((sum, seg) => sum + seg.carboCalc, 0);
+      
+      // Calculate cumulative CHO planned total
+      const choPlanTotal = segments.slice(0, i + 1).reduce((sum, s) => {
+        const planned = s.carbo !== null && s.carbo !== '' ? Number(s.carbo) : 0;
+        return sum + planned;
+      }, 0);
+      
+      // Build food items list for grid view
+      let foodList = '';
+      if (seg.foodItems && seg.foodItems.length > 0) {
+        foodList = seg.foodItems.map((item, rowIdx) => {
+          const food = foods[item.foodIndex];
+          const label = foodLabel(food);
+          return `<div style="display:flex; align-items:center; justify-content:space-between; padding:4px 0; font-size:0.8rem;">
+            <span>${label}</span>
+            <button onclick="removeSegmentFood(${i}, ${rowIdx})" style="background:var(--accent3); color:#0a0e1a; border:none; border-radius:4px; padding:2px 6px; font-size:0.6rem; cursor:pointer; margin-left:8px;">×</button>
+          </div>`;
+        }).join('');
+      }
+      
+      return `
+        <tr>
+          <td style="padding:12px; border-bottom:1px solid var(--border); font-weight:600;">${c.name}</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center;">${c.km} km</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center;">${fmtDuration(c.segMin)}</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent5); font-weight:600;">${fmt(c.carboCalc,0)}</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent); font-weight:600;">${fmt(choTotal,0)}</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent3); font-weight:600;">${fmt(choIng,0)}</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent4); font-weight:600;">${choPlanned !== null ? fmt(choBorr,0) : '—'}</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center;">
+            <input type="number" value="${choPlanned !== null ? choPlanned : ''}" placeholder="—" oninput="segments[${i}].carbo=this.value?+this.value:null;debouncedRenderAll()" style="width:80px; font-size:0.9rem; font-weight:600; font-family:'JetBrains Mono',monospace; padding:6px 8px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; color:var(--accent2); text-align:center;">
+          </td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent2); font-weight:600; font-family:'JetBrains Mono',monospace;">${fmt(choPlanTotal, 0)}</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:left;">
+            <div style="display:flex; flex-direction:column;">
+              ${foodList}
+              <button onclick="addSegmentFood(${i})" style="background:var(--accent4); color:#0a0e1a; border:none; border-radius:6px; padding:4px 8px; font-size:0.7rem; cursor:pointer; font-weight:600; margin-top:4px;">+</button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+    
+    html = `
+      <div class="table-scroll">
+        <table style="width:100%; background:var(--surface); border-radius:12px; overflow:hidden; border-collapse:collapse;">
+          <thead>
+            <tr style="background:var(--surface2);">
+              <th style="padding:16px; text-align:left; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Tratto</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Km</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Tempo</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">CHO Calc</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">CHO Tot</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">CHO Solidi</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">CHO Borr</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Pianificato</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">CHO Plan Tot</th>
+              <th style="padding:16px; text-align:left; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Alimenti Solidi</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
       </div>
     `;
-    
-    return `
-      <div class="nut-card" style="animation-delay:${i*0.06}s; cursor:pointer;" onclick="this.querySelector('input[type=number]').focus()">
-        <div class="card-glow" style="background:${colors[i%colors.length]}"></div>
-        <div class="nt-header">
-          <span class="nt-name">${c.name}</span>
-          <span class="nt-km">${c.km} km · ${fmtDuration(c.segMin)}</span>
-        </div>
-        <div style="margin-bottom:12px;">
-          <label style="font-size:0.65rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:4px;">CHO Planned</label>
-          <input type="number" value="${choPlanned !== null ? choPlanned : ''}" placeholder="Inserisci CHO" oninput="segments[${i}].carbo=this.value?+this.value:null;debouncedRenderAll()" style="width:100%; font-size:1.1rem; font-weight:700; font-family:'JetBrains Mono',monospace; padding:8px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; color:var(--accent); text-align:center;" onclick="event.stopPropagation()">
-        </div>
-        <div class="nt-stats">
-          <div class="nt-stat"><div class="st-label">CHO Calc</div><div class="st-val accent5">${fmt(c.carboCalc,0)} g</div></div>
-          <div class="nt-stat"><div class="st-label">CHO Ing</div><div class="st-val accent2">${fmt(choIng,0)} g</div></div>
-          <div class="nt-stat" style="grid-column:span 2;"><div class="st-label">CHO Borraccia</div><div class="st-val accent4">${choPlanned !== null ? fmt(choBorr,0) + ' g' : '—'}</div></div>
-        </div>
-        ${foodTableHtml}
-      </div>
-    `;
-  }).join('');
+  }
+  
   document.getElementById('nutGrid').innerHTML = html;
-
-  // KPI summary
-  const totCarboCalc = computed.reduce((a,c) => a + c.carboCalc, 0);
-  const totCarboPiano = segments.reduce((a,s) => (s.carbo !== null ? a + Number(s.carbo) : a), 0);
-  const totCarboInt = segments.reduce((a,s) => a + (s.carboInt || 0), 0);
-  const totMalto = segments.reduce((a,s) => a + (s.malto || 0), 0);
-  const totCarboAll = totCarboInt + totMalto;
-  const maltoReq = totCarboPiano - totCarboInt;       // R13
-  const dScir = ((totMalto/2)*(cfg.siroSugar/100)) + (totMalto/2); // S13
-  const totBor = computed[computed.length-1].cumBor;
-
-  document.getElementById('kpiRow').innerHTML = `
-    <div class="kpi-card"><div class="kpi-val">${fmt(totCarboCalc,0)}</div><div class="kpi-label">Carbo Calcolati (g)</div></div>
-    <div class="kpi-card"><div class="kpi-val">${totCarboPiano}</div><div class="kpi-label">Carbo Piano (g)</div></div>
-    <div class="kpi-card"><div class="kpi-val">${totCarboInt}</div><div class="kpi-label">Carbo Integrazione (g)</div></div>
-    <div class="kpi-card"><div class="kpi-val">${totMalto}</div><div class="kpi-label">Maltodestrina Tot (g)</div></div>
-    <div class="kpi-card"><div class="kpi-val">${totCarboAll}</div><div class="kpi-label">Carbo Totali (g)</div></div>
-    <div class="kpi-card"><div class="kpi-val">${maltoReq}</div><div class="kpi-label">Malto Richiesto (g)</div></div>
-    <div class="kpi-card"><div class="kpi-val">${fmt(dScir,1)}</div><div class="kpi-label">∆ Sciroppo (g)</div></div>
-    <div class="kpi-card"><div class="kpi-val">${fmt(totBor,2)}</div><div class="kpi-label">Borracce Tot</div></div>
-  `;
+  document.getElementById('nutGrid').className = `nut-grid ${nutritionView}-view`;
 }
 
 function renderBottles(meta) {
@@ -1382,6 +1577,13 @@ function switchTab(name) {
   if (name === 'charts') setTimeout(renderCharts, 100);
 }
 
+function setNutritionView(view) {
+  nutritionView = view;
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[onclick="setNutritionView('${view}')"]`).classList.add('active');
+  renderAllWithCharts();
+}
+
 // ═══════════════════════════════════════════════════════
 // MODAL DIALOG — Osmolarità
 // ═══════════════════════════════════════════════════════
@@ -1463,6 +1665,8 @@ document.addEventListener('click', (e) => {
 // ═══════════════════════════════════════════════════════
 // Fix typo in carbs chart series reference
 window.onload = () => {
+  // Set initial view button
+  document.querySelector(`[onclick="setNutritionView('${nutritionView}')"]`).classList.add('active');
   renderAllWithCharts();
 };
 </script>
