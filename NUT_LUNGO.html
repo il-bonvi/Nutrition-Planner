@@ -386,6 +386,7 @@ body {
   <button class="tab-btn" onclick="switchTab('foods')">🍔 Alimenti</button>
   <button class="tab-btn" onclick="switchTab('nutrition')">🍜 Nutrizione</button>
   <button class="tab-btn" onclick="switchTab('bottles')">💧 Borracce</button>
+  <button class="tab-btn" onclick="switchTab('segNutrition')">⚡ Nutrizione Segmenti</button>
   <button class="tab-btn" onclick="switchTab('charts')">📊 Grafici</button>
 </div>
 
@@ -433,6 +434,13 @@ body {
   <div class="bottle-row" id="bottleConfig"></div>
   <div class="section-title" style="margin-top:28px"><span class="dot" style="background:var(--accent)"></span>Piano Idratazione per Tratto</div>
   <div class="bottle-row" id="bottleCards"></div>
+  <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
+</div>
+
+<!-- TAB: SEGMENT NUTRITION -->
+<div class="tab-panel" id="tab-segNutrition">
+  <div class="section-title"><span class="dot" style="background:var(--accent5)"></span>Nutrizione per Tratto</div>
+  <div class="table-scroll"><table class="seg-table" id="segNutritionTable"></table></div>
   <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
@@ -499,7 +507,7 @@ function recalc() {
 
   segments.forEach((s, i) => {
     // duration
-    const segMin  = (i === 0) ? s.h * 60 : (s.h * 60) + s.min;  // first row: G=C*60 (no D)
+    const segMin  = s.h * 60 + s.min;  // G = C*60 + D (for all rows, not just i>0)
     cumMin       += segMin;
     const cumH    = Math.floor(cumMin / 60);
     const cumM    = cumMin - cumH * 60;
@@ -507,12 +515,12 @@ function recalc() {
 
     // deltas
     const prevKm   = i > 0 ? segments[i-1].km : 0;
-    const prevTime = i > 0 ? computed[i-1].cumTime : 0;
+    const prevTime = i > 0 ? computed[i-1].cumTimeDec : 0;
     const dKm      = s.km - prevKm;                // M
     const dTime    = cumTimeDec - prevTime;         // N
 
-    const avgSpeed = s.km / cumTimeDec;            // I
-    const segSpeed = dTime > 0 ? dKm / dTime : 0; // J
+    const avgSpeed = dTime > 0 ? dKm / dTime : 0;  // I - velocità del segmento corrente
+    const segSpeed = dTime > 0 ? dKm / dTime : 0; // J - stessa cosa per ora
 
     // nutrition
     const carboCalc = cfg.carbPerHour * dTime;     // O = carboC
@@ -552,6 +560,7 @@ function renderAll() {
   renderHeader(meta);
   renderConfig();
   renderTable();
+  renderSegmentNutrition();
   renderFoods();
   renderNutrition(meta);
   renderBottles(meta);
@@ -602,34 +611,59 @@ function renderConfig() {
   `;
 }
 
+function addSegment() {
+  segments.push({ name:'Nuovo', km:0, h:0, min:0, carbo:0, integrazione:'', carboInt:0, malto:0, consum:null });
+  debouncedRenderAll();
+}
+
+function removeSegment(index) {
+  if (segments.length > 1) {
+    segments.splice(index, 1);
+    debouncedRenderAll();
+  }
+}
+
 function renderTable() {
-  const totalKm = segments[segments.length-1].km;
   let hdr = `<thead><tr>
     <th style="text-align:left">Tratto</th>
     <th>km</th><th>h</th><th>min</th>
-    <th class="col-div">Seg min</th><th>Tot min</th>
-    <th class="col-div">Ore</th><th>Min</th><th>Time (h)</th>
-    <th class="col-div">∆ km</th><th>∆ time</th>
+    <th class="col-div">Tot ore</th><th>Tot min</th>
+    <th class="col-div">∆ km</th>
     <th class="col-div">Vel. Media</th><th>Vel. Tratto</th>
-    <th class="col-div">CarboCalc</th><th>Carbo</th><th>Malto (g)</th><th>Borr. fraz.</th>
+    <th style="width:120px">Azioni</th>
   </tr></thead>`;
 
   let rows = computed.map((c,i) => {
-    const pct = (c.km / totalKm * 100).toFixed(0);
+    const canRemove = segments.length > 1;
     return `<tr>
       <td><input type="text" value="${c.name}" oninput="segments[${i}].name=this.value;debouncedRenderAll()"></td>
       <td><input type="number" value="${segments[i].km}" oninput="segments[${i}].km=+this.value;debouncedRenderAll()"></td>
       <td><input type="number" value="${segments[i].h}" oninput="segments[${i}].h=+this.value;debouncedRenderAll()"></td>
       <td><input type="number" value="${segments[i].min}" oninput="segments[${i}].min=+this.value;debouncedRenderAll()"></td>
-      <td class="col-div calc">${c.segMin}</td>
-      <td class="calc">${c.cumMin}</td>
       <td class="col-div calc">${c.cumH}</td>
       <td class="calc">${c.cumM}</td>
-      <td class="calc">${fmt(c.cumTimeDec)}</td>
       <td class="col-div calc">${c.dKm}</td>
-      <td class="calc">${fmt(c.dTime)}</td>
       <td class="col-div calc speed">${fmt(c.avgSpeed)}</td>
       <td class="calc speed">${fmt(c.segSpeed)}</td>
+      <td style="text-align:center">
+        <button onclick="addSegment()" style="background:var(--accent4); color:#0a0e1a; border:none; border-radius:4px; padding:4px 8px; font-size:0.7rem; cursor:pointer; margin-right:4px;">+</button>
+        <button onclick="removeSegment(${i})" ${canRemove ? '' : 'disabled'} style="background:${canRemove ? 'var(--accent3)' : 'var(--surface3)'}; color:${canRemove ? '#0a0e1a' : 'var(--text-muted)'}; border:none; border-radius:4px; padding:4px 8px; font-size:0.7rem; cursor:${canRemove ? 'pointer' : 'not-allowed'};">−</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('segTable').innerHTML = hdr + `<tbody>${rows}</tbody>`;
+}
+
+function renderSegmentNutrition() {
+  let hdr = `<thead><tr>
+    <th style="text-align:left">Tratto</th>
+    <th class="col-div">CarboCalc</th><th>Carbo</th><th>Malto (g)</th><th>Borr. fraz.</th>
+  </tr></thead>`;
+
+  let rows = computed.map((c,i) => {
+    return `<tr>
+      <td>${c.name}</td>
       <td class="col-div calc carb">${fmt(c.carboCalc)}</td>
       <td><input type="number" value="${segments[i].carbo}" oninput="segments[${i}].carbo=+this.value;debouncedRenderAll()"></td>
       <td><input type="number" value="${segments[i].malto}" oninput="segments[${i}].malto=+this.value;debouncedRenderAll()"></td>
@@ -637,7 +671,7 @@ function renderTable() {
     </tr>`;
   }).join('');
 
-  document.getElementById('segTable').innerHTML = hdr + `<tbody>${rows}</tbody>`;
+  document.getElementById('segNutritionTable').innerHTML = hdr + `<tbody>${rows}</tbody>`;
 }
 
 function renderFoods() {
