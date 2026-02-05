@@ -499,6 +499,10 @@ body {
     <button onclick="autoFillChoPlanned()" style="background:var(--accent2); color:#0a0e1a; border:none; border-radius:6px; padding:6px 12px; font-size:0.75rem; cursor:pointer; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">Auto CHO Totale</button>
   </div>
   <div class="nut-grid" id="nutGrid"></div>
+  
+  <div class="section-title" style="margin-top:40px"><span class="dot" style="background:var(--accent5)"></span>☕ Caffeina Assunta <span onclick="showCaffeineFormula()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></div>
+  <div class="caffeine-bars" id="caffeineGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:16px; margin-bottom:24px;"></div>
+  
   <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
@@ -525,6 +529,7 @@ body {
     <div class="chart-box"><h4>Carboidrati: Piano vs Calcolato</h4><div class="echarts-container" id="chartCarbs"></div></div>
     <div class="chart-box"><h4>Consumo Borraccia per Tratto</h4><div class="echarts-container" id="chartBottle"></div></div>
     <div class="chart-box"><h4>Profilo Temporale</h4><div class="echarts-container" id="chartTime"></div></div>
+    <div class="chart-box"><h4>Caffeina nel Sangue</h4><div class="echarts-container" id="chartCaffeine"></div></div>
   </div>
   <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
@@ -644,6 +649,52 @@ body {
   </div>
 </div>
 
+<div class="modal-overlay" id="caffeineModal">
+  <div class="modal-dialog" style="max-width:480px; max-height:70vh; overflow-y:auto;">
+    <h3>☕ Gestione Caffeina</h3>
+    <p style="font-size:0.95rem;">La caffeina segue un decadimento esponenziale (emivita) nel corpo.</p>
+    
+    <div style="margin:12px 0 20px 0; padding:16px; background:var(--surface); border-radius:10px; border:1px solid var(--border);">
+      <h4 style="margin:0 0 8px 0; color:var(--accent);">📊 Formula di Calcolo</h4>
+      <div style="font-family:'JetBrains Mono',monospace; font-size:1.1rem; margin:8px 0 12px 0; text-align:center; background:rgba(0,229,255,0.06); padding:8px 10px; border-radius:4px;">
+        C(t) = C₀ · (½)<sup>t/t½</sup>
+      </div>
+
+      <div style="display:grid; gap:8px; font-size:0.95rem;">
+        <div><strong>C₀</strong> = Dose iniziale (mg)</div>
+        <div><strong>t</strong> = Tempo trascorso (ore)</div>
+        <div><strong>t½</strong> = Emivita (ore)</div>
+        <div><strong>C(t)</strong> = Caffeina residua</div>
+      </div>
+
+      <hr style="margin:12px 0; border:none; border-top:1px solid var(--border);">
+
+      <div style="display:grid; gap:10px; font-size:0.95rem;">
+        <div style="font-weight:700; color:var(--accent);">🧬 Variabilità Interindividuale</div>
+        <div><strong>Interindividuale:</strong> 78,6% (differenze tra persone)</div>
+        <div><strong>Intraindividuale:</strong> 21,4% (variazioni nello stesso individuo)</div>
+        <div style="margin-top:6px; padding:8px; background:rgba(0,229,255,0.06); border-radius:6px; font-size:0.9rem;">La velocità di eliminazione varia significativamente tra gli individui</div>
+
+        <div style="font-weight:700; color:var(--accent); margin-top:8px;">⏱️ Emivita Tipica</div>
+        <div><strong>~5 ore (default):</strong> Adulto sano</div>
+        <div><strong>↓ 3 ore:</strong> Fumatori</div>
+        <div><strong>↑ 7 ore:</strong> Gravidanza, contraccettivi orali</div>
+
+        <div style="font-weight:700; color:var(--accent); margin-top:8px;">📍 Timing di Assunzione</div>
+        <div>Si assume che la caffeina raggiunga il picco ematico <strong>a metà segmento di assunzione</strong></div>
+      </div>
+    </div>
+
+    <p style="font-size:0.95rem; color:var(--accent5); margin-top:8px; padding:10px; background:rgba(245,158,11,.06); border-radius:6px;">
+      <strong>💡 Nota:</strong> I valori mostrati sono teorici. La tua esperienza individuale potrebbe differire significativamente.
+    </p>
+
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-close" onclick="closeCaffeineFormula()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="choBottleModal">
   <div class="modal-dialog">
     <h3>🥤 CHO per Borraccia</h3>
@@ -709,6 +760,7 @@ const cfg = {
   siroSugar: 93,         // S23 — sciroppo sugar %
   targetOsm: 6,          // Target osmolarità % per borraccia 1 (4-8%)
   choPerBottle: 0,       // Inserisci grammi CHO manuali per borraccia (opzionale)
+  caffeineHalfLife: 5,   // Emivita caffeina in ore (default 5h)
 };
 
 // ── SEGMENTS (input data) ──
@@ -728,9 +780,9 @@ let segments = [
 let nutritionView = 'cards'; // 'cards' or 'grid'
 
 // ── FOODS (input data) ──
-// Each: { type, grCho, qty, pctCho, grFood, customName }
+// Each: { type, grCho, qty, pctCho, grFood, customName, caffeineMg }
 let foods = [
-  { type:'barretta', grCho:null, qty:1, pctCho:null, grFood:null, customName:'' },
+  { type:'barretta', grCho:null, qty:1, pctCho:null, grFood:null, customName:'', caffeineMg:0 },
 ];
 
 // ── AVAILABLE FOOD INSTANCES ──
@@ -856,7 +908,9 @@ function foodLabel(food) {
   if (!food) return '—';
   const name = food.type === 'altro' && food.customName ? food.customName : food.type;
   const cho = calcFoodChoPerUnit(food);
-  return cho > 0 ? `${name} (${fmt(cho,0)} g CHO)` : `${name} (CHO ?)`;
+  const choText = cho > 0 ? `${fmt(cho,0)}g CHO` : 'CHO ?';
+  const caffText = food.caffeineMg > 0 ? ` (${food.caffeineMg}mg caffeina)` : '';
+  return `${name} ${choText}${caffText}`;
 }
 
 function showFoodSelectorModal(segIdx) {
@@ -967,7 +1021,7 @@ function debouncedRenderAll() {
 }
 
 function addFood() {
-  foods.push({ type:'barretta', grCho:null, qty:1, pctCho:null, grFood:null, customName:'' });
+  foods.push({ type:'barretta', grCho:null, qty:1, pctCho:null, grFood:null, customName:'', caffeineMg:0 });
   debouncedRenderAll();
 }
 
@@ -1036,6 +1090,7 @@ function renderConfig() {
 
   document.getElementById('configRow').innerHTML = `
     <div class="config-card"><label>Carbo/h (g) <span onclick="showCarbDialog()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></label><input type="number" value="${cfg.carbPerHour}" oninput="cfg.carbPerHour=+this.value;debouncedRenderAll()"></div>
+    <div class="config-card"><label>Emivita Caffeina (h) <span onclick="showCaffeineDialog()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></label><input type="number" step="0.5" min="1" max="10" value="${cfg.caffeineHalfLife}" oninput="cfg.caffeineHalfLife=+this.value;debouncedRenderAll()"></div>
     <div class="config-card"><label>Vol. Borraccia (ml)</label><input type="number" value="${cfg.bottleVol}" oninput="cfg.bottleVol=+this.value;debouncedRenderAll()"></div>
     <div class="config-card"><label>Target Osm. % <span onclick="showOsmDialog()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></label><input type="number" step="0.5" min="2" max="10" value="${cfg.targetOsm}" oninput="cfg.targetOsm=+this.value;debouncedRenderAll()"></div>
     <div class="config-card"><label>CHO per Borraccia (g) <span onclick="showChoBottleDialog()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></label><input type="number" step="1" value="${cfg.choPerBottle || ''}" placeholder="!!leggi info!!" oninput="cfg.choPerBottle=this.value?+this.value:0;debouncedRenderAll()"></div>
@@ -1207,6 +1262,7 @@ function renderFoods() {
     <th>gr Alimento</th>
     <th class="col-div">Quantità</th>
     <th>CHO Totale</th>
+    <th>Caffeina</th>
     <th style="width:120px">Azioni</th>
   </tr></thead>`;
 
@@ -1238,6 +1294,9 @@ function renderFoods() {
       <td><input type="number" step="0.1" value="${f.grFood || ''}" placeholder="es. 100" oninput="foods[${i}].grFood=this.value?+this.value:null; foods[${i}].grCho=null; debouncedRenderAll()"></td>
       <td class="col-div"><input type="number" value="${f.qty || ''}" placeholder="es. 3" oninput="foods[${i}].qty=this.value?+this.value:null;debouncedRenderAll()"></td>
       <td class="calc">${fmt(calcCho, 0)}</td>
+      <td style="text-align:center;">
+        <input type="range" min="0" max="200" step="10" value="${f.caffeineMg || 0}" oninput="foods[${i}].caffeineMg=+this.value; document.getElementById('caffeine-${i}').textContent=(this.value == 0 ? 'no' : this.value + ' mg'); debouncedRenderAll()" style="width:80px; -webkit-appearance: none; background: var(--surface3); border-radius: 5px; outline: none; ::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: var(--accent); border-radius: 50%; cursor: pointer; }"><br><span id="caffeine-${i}" style="font-size:0.7rem; color:var(--text-muted);">${f.caffeineMg === 0 ? 'no' : (f.caffeineMg || 0) + ' mg'}</span>
+      </td>
       <td style="text-align:center">
         <button onclick="addFood()" style="background:var(--accent4); color:#0a0e1a; border:none; border-radius:4px; padding:4px 8px; font-size:0.7rem; cursor:pointer; margin-right:4px;">+</button>
         <button onclick="removeFood(${i})" ${canRemove ? '' : 'disabled'} style="background:${canRemove ? 'var(--accent3)' : 'var(--surface3)'}; color:${canRemove ? '#0a0e1a' : 'var(--text-muted)'}; border:none; border-radius:4px; padding:4px 8px; font-size:0.7rem; cursor:${canRemove ? 'pointer' : 'not-allowed'};">−</button>
@@ -1422,6 +1481,58 @@ function renderNutrition(meta) {
   
   document.getElementById('nutGrid').innerHTML = html;
   document.getElementById('nutGrid').className = `nut-grid ${nutritionView}-view`;
+  
+  // Render caffeine bars
+  const caffeineHtml = computed.map((c, i) => {
+    const seg = segments[i];
+    let totalCaffeineInSegment = 0;
+    if (seg.foodItems && seg.foodItems.length > 0) {
+      seg.foodItems.forEach(item => {
+        const food = foods[item.foodIndex];
+        if (food && food.caffeineMg > 0) {
+          totalCaffeineInSegment += food.caffeineMg;
+        }
+      });
+    }
+    
+    // Max caffeine for scaling (find the max across all segments)
+    const maxCaffeine = computed.reduce((max, co, idx) => {
+      let totalCaff = 0;
+      if (segments[idx].foodItems) {
+        segments[idx].foodItems.forEach(item => {
+          const food = foods[item.foodIndex];
+          if (food && food.caffeineMg > 0) totalCaff += food.caffeineMg;
+        });
+      }
+      return Math.max(max, totalCaff);
+    }, 0) || 1;
+    
+    const barHeightPct = (totalCaffeineInSegment / maxCaffeine) * 100;
+    const color = ['#f59e0b', '#06b6d4', '#8b5cf6', '#ec4899', '#f43f5e', '#10b981', '#00e5ff', '#7c3aed'][i % 8];
+    
+    return `
+      <div style="padding:16px; background:var(--surface); border-radius:10px; border:1px solid var(--border); display:flex; flex-direction:column; justify-content:space-between;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
+          <div>
+            <div style="font-weight:600; color:var(--text);">${c.name}</div>
+            <div style="font-size:0.75rem; color:var(--text-muted);">${c.km} km · ${fmtDuration(c.segMin)}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:1.3rem; font-weight:700; font-family:'JetBrains Mono',monospace; color:${color};">${totalCaffeineInSegment}</div>
+            <div style="font-size:0.7rem; color:var(--text-muted);">mg</div>
+          </div>
+        </div>
+        <div style="width:100%; height:20px; background:var(--surface2); border-radius:4px; overflow:hidden; border:1px solid var(--border);">
+          <div style="width:${barHeightPct}%; height:100%; background:${color}; transition:width 0.3s ease;"></div>
+        </div>
+      </div>
+    `;
+  }).join('');
+  
+  // Render the caffeine section title with icon first
+  let caffeineSection = '<div style="margin-top:40px; margin-bottom:16px; display:flex; align-items:center; gap:12px;"><span style="color:var(--text-muted); font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; flex:1;">☕ Caffeina Assunta</span><span onclick="showCaffeineFormula()" style="cursor:pointer; color:var(--accent); font-weight:600; font-size:1.2rem;">ℹ️</span><div style="flex:1; height:1px; background:linear-gradient(90deg, var(--border), transparent);"></div></div>';
+  
+  document.getElementById('caffeineGrid').innerHTML = caffeineSection + '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:16px;">' + (caffeineHtml || '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted); font-style:italic;">Aggiungi caffeina agli alimenti nella sezione Solidi</div>') + '</div>';
 }
 
 function renderBottles(meta) {
@@ -1579,6 +1690,67 @@ function renderCharts() {
       }
     ]
   });
+
+  // ── Caffeine decay ──
+  // Calcola caffeina accumulata da ogni segmento e decadimento nel tempo
+  function calcCaffeineAtTime(timeHours) {
+    // Calcola quanto caffeine è in circolo al momento timeHours
+    // Assume che la caffeina sia assunta a metà di ogni segmento
+    let totalCaffeine = 0;
+    let cumulativeTime = 0;
+
+    segments.forEach((seg, segIdx) => {
+      // Caffeina da questo segmento
+      let segCaffeine = 0;
+      if (seg.foodItems && seg.foodItems.length > 0) {
+        seg.foodItems.forEach(fi => {
+          const foodObj = foods[fi.foodIndex];
+          if (foodObj && foodObj.caffeineMg > 0) {
+            segCaffeine += foodObj.caffeineMg || 0;
+          }
+        });
+      }
+
+      const dTime = computed[segIdx] ? computed[segIdx].dTime : 0;
+      const intakeTimeHours = cumulativeTime + dTime / 2; // assunta a metà segmento
+
+      if (segCaffeine > 0 && intakeTimeHours <= timeHours) {
+        // La caffeina è stata assunta prima di timeHours
+        const hoursPassed = timeHours - intakeTimeHours;
+        const remaining = segCaffeine * Math.pow(0.5, hoursPassed / cfg.caffeineHalfLife);
+        totalCaffeine += remaining;
+      }
+      
+      cumulativeTime += dTime;
+    });
+
+    return Math.max(0, totalCaffeine);
+  }
+
+  // Calcola caffeina a fine di ogni segmento
+  const caffeineAtEnd = [];
+  computed.forEach((c, i) => {
+    caffeineAtEnd.push(Math.round(calcCaffeineAtTime(c.cumTimeDec) * 10) / 10);
+  });
+
+  // Grafico caffeina
+  initChart('chartCaffeine', {
+    tooltip:{ trigger:'axis', backgroundColor:'#1a2236', borderColor:'#243044', textStyle:{ color:'#e2e8f0' }},
+    legend:{ textStyle:baseText, left:'center', top:4 },
+    grid:{ top:36, bottom:28, left:40, right:20 },
+    xAxis:{ ...baseAxis, data:names, type:'category' },
+    yAxis:{ ...baseAxis, type:'value', name:'mg', nameTextStyle:baseText },
+    series:[
+      { name:'Caffeina in circolo', type:'line', data:caffeineAtEnd, smooth:true,
+        lineStyle:{ color:'#f59e0b', width:3 },
+        itemStyle:{ color:'#f59e0b' },
+        areaStyle:{ color:{ type:'linear', x:0, y:0, x2:0, y2:1,
+          colorStops:[{ offset:0, color:'rgba(245,158,11,0.3)' },{ offset:1, color:'rgba(245,158,11,0)' }]
+        }},
+        symbol:'circle', symbolSize:6
+      }
+    ]
+  });
 }
 
 function initChart(id, option) {
@@ -1637,6 +1809,22 @@ function closeCarbDialog() {
   document.getElementById('carbModal').classList.remove('active');
 }
 
+function showCaffeineDialog() {
+  document.getElementById('caffeineModal').classList.add('active');
+}
+
+function closeCaffeineDialog() {
+  document.getElementById('caffeineModal').classList.remove('active');
+}
+
+function showCaffeineFormula() {
+  document.getElementById('caffeineModal').classList.add('active');
+}
+
+function closeCaffeineFormula() {
+  document.getElementById('caffeineModal').classList.remove('active');
+}
+
 function showChoBottleDialog() {
   document.getElementById('choBottleModal').classList.add('active');
 }
@@ -1678,6 +1866,7 @@ document.addEventListener('click', (e) => {
   const osmModal = document.getElementById('osmModal');
   const choModal = document.getElementById('choModal');
   const carbModal = document.getElementById('carbModal');
+  const caffeineModal = document.getElementById('caffeineModal');
   const choBottleModal = document.getElementById('choBottleModal');
   if (e.target === osmModal) {
     osmModal.classList.remove('active');
@@ -1687,6 +1876,9 @@ document.addEventListener('click', (e) => {
   }
   if (e.target === carbModal) {
     carbModal.classList.remove('active');
+  }
+  if (e.target === caffeineModal) {
+    caffeineModal.classList.remove('active');
   }
   if (e.target === choBottleModal) {
     choBottleModal.classList.remove('active');
