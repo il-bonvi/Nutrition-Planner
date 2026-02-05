@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>NUT LUNGO — Race Nutrition Planner</title>
+<title>Bonvi - NutPlan  </title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
@@ -23,6 +23,8 @@
   --border: rgba(148,163,184,0.1);
   --glow: rgba(0,229,255,0.15);
   --glow2: rgba(124,58,237,0.12);
+  --warning: #f59e0b;
+  --warning-bg: rgba(245,158,11,0.08);
 }
 
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -280,6 +282,12 @@ body {
 .bottle-row {
   display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px;
 }
+.bottle-row.cards-view {
+  display:grid; grid-template-columns:repeat(auto-fit, minmax(240px,1fr)); gap:16px;
+}
+.bottle-row.compact-view {
+  display:block;
+}
 .bottle-card {
   background:var(--surface); border:1px solid var(--border); border-radius:18px;
   padding:20px; transition:.3s; animation: fadeUp 0.6s cubic-bezier(.22,1,.36,1) both;
@@ -405,7 +413,7 @@ body {
 
 /* ── TAB NAV ── */
 .tab-nav {
-  display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap;
+  display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; justify-content:center;
 }
 .tab-btn {
   background:var(--surface); border:1px solid var(--border); color:var(--text-muted);
@@ -436,8 +444,8 @@ body {
 
 <!-- HEADER -->
 <div class="header">
-  <h1>NUT LUNGO</h1>
-  <div class="subtitle">Race Nutrition & Hydration Planner</div>
+  <h1>BONVI NUTPLAN</h1>
+  <div class="subtitle">Nutrition & Hydration Planner</div>
   <div class="race-meta" id="raceMeta"></div>
 </div>
 
@@ -448,7 +456,6 @@ body {
   <button class="tab-btn" onclick="switchTab('config')">⚙️ Configurazione</button>
   <button class="tab-btn" onclick="switchTab('nutrition')">🍜 Nutrizione</button>
   <button class="tab-btn" onclick="switchTab('bottles')">💧 Borracce</button>
-  <button class="tab-btn" onclick="switchTab('segNutrition')">⚡ Nutrizione Segmenti</button>
   <button class="tab-btn" onclick="switchTab('charts')">📊 Grafici</button>
 </div>
 
@@ -500,25 +507,22 @@ body {
   </div>
   <div class="nut-grid" id="nutGrid"></div>
   
-  <div class="section-title" style="margin-top:40px"><span class="dot" style="background:var(--accent5)"></span>☕ Caffeina Assunta <span onclick="showCaffeineFormula()" style="cursor:pointer; color:var(--accent); font-weight:600;">ℹ️</span></div>
-  <div class="caffeine-bars" id="caffeineGrid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:16px; margin-bottom:24px;"></div>
-  
   <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
 <!-- TAB: BOTTLES -->
 <div class="tab-panel" id="tab-bottles">
   <div class="section-title"><span class="dot" style="background:var(--accent2)"></span>Configurazione Borracce</div>
+  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+    <div class="view-selector">
+      <button class="view-btn active" onclick="setBottleView('cards')" title="Vista Cards">📋</button>
+      <button class="view-btn" onclick="setBottleView('compact')" title="Vista Compatta">⊞</button>
+    </div>
+    <button onclick="showOsmDialog()" style="background:var(--accent2); color:#0a0e1a; border:none; border-radius:6px; padding:6px 12px; font-size:0.75rem; cursor:pointer; font-weight:600; text-transform:uppercase; letter-spacing:0.5px;">ℹ️ Osmolarità</button>
+  </div>
   <div class="bottle-row" id="bottleConfig"></div>
   <div class="section-title" style="margin-top:28px"><span class="dot" style="background:var(--accent)"></span>Piano Idratazione per Tratto</div>
   <div class="bottle-row" id="bottleCards"></div>
-  <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
-</div>
-
-<!-- TAB: SEGMENT NUTRITION -->
-<div class="tab-panel" id="tab-segNutrition">
-  <div class="section-title"><span class="dot" style="background:var(--accent5)"></span>Nutrizione per Tratto</div>
-  <div class="table-scroll"><table class="seg-table" id="segNutritionTable"></table></div>
   <div class="tab-footer">© 2026 Andrea Bonvicin — <strong>work in progress</strong> — <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank">Apache License 2.0</a></div>
 </div>
 
@@ -555,36 +559,9 @@ body {
     <h3>📊 Osmolarità Suggerita</h3>
     <p>Scegli un livello di osmolarità in base al tuo comfort gastrointestinale e alla tolleranza.</p>
     
-    <table class="osm-table">
-      <thead>
-        <tr>
-          <th>Livello</th>
-          <th>Osm %</th>
-          <th>Gr CHO<br/>(950ml)</th>
-          <th>Caratteristica</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td class="label">🟢 Leggera</td>
-          <td class="value">4%</td>
-          <td class="value">38 g</td>
-          <td class="note">Meno concentrata, più tollerabile</td>
-        </tr>
-        <tr>
-          <td class="label">🟡 Standard</td>
-          <td class="value">6%</td>
-          <td class="value">57 g</td>
-          <td class="note">Bilanciata, consigliata</td>
-        </tr>
-        <tr>
-          <td class="label">🔴 Forte</td>
-          <td class="value">8%</td>
-          <td class="value">76 g</td>
-          <td class="note">Più concentrata, ottima assimilazione</td>
-        </tr>
-      </tbody>
-    </table>
+    <div id="osmTableContainer">
+      <!-- Table will be populated by JavaScript -->
+    </div>
 
     <p style="font-size:0.8rem; color:var(--accent5); margin-top:16px; padding:10px; background:rgba(245,158,11,.1); border-radius:6px;">
       <strong>💡 Consiglio:</strong> Inizia con 6% e regola in base alla tolleranza durante l'allenamento.
@@ -747,6 +724,22 @@ body {
   </div>
 </div>
 
+<!-- REFILL MODAL -->
+<div class="modal-overlay" id="refillModal" style="display:none;" onclick="closeRefillModal()">
+  <div class="modal-dialog" onclick="event.stopPropagation()">
+    <h3>⚠️ Istruzioni Refill</h3>
+    <p>Quando il consumo supera 1 borraccia, devi refillare la borraccia successiva usando la borraccia iperconcentrata diluita con acqua.</p>
+    
+    <div id="refillContent" style="margin:20px 0;">
+      <!-- Content will be populated by JavaScript -->
+    </div>
+
+    <div class="modal-buttons">
+      <button class="modal-btn modal-btn-close" onclick="closeRefillModal()">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════
 // DATA MODEL — faithfully ported from NUT_LUNGO.xlsx
@@ -778,6 +771,7 @@ let segments = [
 
 // ── NUTRITION VIEW ──
 let nutritionView = 'cards'; // 'cards' or 'grid'
+let bottleView = 'cards'; // 'cards' or 'compact'
 
 // ── FOODS (input data) ──
 // Each: { type, grCho, qty, pctCho, grFood, customName, caffeineMg }
@@ -836,6 +830,13 @@ function recalc() {
     s.carboInt = choIng;
     s.malto = choBorraccia;
 
+    // Calculate bottle consumption based on CHO planned and bottle CHO capacity
+    if (choPlanned !== null && cfg.choPerBottle > 0) {
+      s.consum = choPlanned / cfg.choPerBottle;
+    } else {
+      s.consum = null;
+    }
+
     // duration
     const segMin  = s.h * 60 + s.min;  // G = C*60 + D (for all rows, not just i>0)
     cumMin       += segMin;
@@ -865,7 +866,7 @@ function recalc() {
     const refill  = s.consum !== null ? s.consum * pctIper : null;     // W
     const refillH2O = s.consum !== null ? s.consum - refill : null;    // X
     const refillMl  = refill !== null ? cfg.bottleVol * refill : null; // Y  (S20 * W)
-    const refillH2OmL = refillH2O !== null ? cfg.bottleVol * refillH2O : null; // Z
+    const refillH2OmL = refillH2O !== null ? cfg.bottleVol * refillH2O : null; // Z - ml H2O consumati (parte acqua)
     const fillIper = borFrac / 3;                  // AA = U/3
     cumIper += fillIper;
     cumBor  += borFrac;
@@ -1002,7 +1003,6 @@ function renderAll() {
   renderHeader(meta);
   renderConfig();
   renderTable();
-  renderSegmentNutrition();
   renderFoods();
   renderNutrition(meta);
   renderBottles(meta);
@@ -1122,14 +1122,14 @@ function renderConfig() {
         <!-- Liquidi per osm ottimale -->
         <div style="text-align:center; padding:16px; background:var(--surface); border-radius:10px;">
           <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Liquidi per Osm Ottimale</div>
-          <div style="font-size:1.8rem; font-weight:800; color:var(--accent4); font-family:'JetBrains Mono',monospace;">${fmt(liquidForOptimalOsm / 1000, 2)} L</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--accent4); font-family:'JetBrains Mono',monospace;">${fmt(liquidForOptimalOsm / 1000, 2)} l</div>
           <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px; font-weight:600;">${fmt(liquidForOptimalOsm / cfg.bottleVol, 1)} borracce</div>
         </div>
 
         <!-- Liquidi per osm custom -->
         <div style="text-align:center; padding:16px; background:var(--surface); border-radius:10px;">
           <div style="font-size:0.7rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:6px;">Liquidi per Osm Custom</div>
-          <div style="font-size:1.8rem; font-weight:800; color:var(--accent2); font-family:'JetBrains Mono',monospace;">${computedOsm !== null ? fmt((choLiquid * 100) / computedOsm / 1000, 2) + ' L' : '—'}</div>
+          <div style="font-size:1.8rem; font-weight:800; color:var(--accent2); font-family:'JetBrains Mono',monospace;">${computedOsm !== null ? fmt((choLiquid * 100) / computedOsm / 1000, 2) + ' l' : '—'}</div>
           <div style="font-size:0.8rem; color:var(--text-muted); margin-top:6px; font-weight:600;">${computedOsm !== null ? fmt(((choLiquid * 100) / computedOsm) / cfg.bottleVol, 1) + ' borracce' : '—'}</div>
         </div>
 
@@ -1230,27 +1230,7 @@ function renderTable() {
   document.getElementById('segTable').innerHTML = hdr + `<tbody>${rows}</tbody>`;
 }
 
-function renderSegmentNutrition() {
-  let hdr = `<thead><tr>
-    <th style="text-align:left">Tratto</th>
-    <th class="col-div">CHO Calc</th><th>CHO Planned</th><th>CHO Ing</th><th>CHO Borraccia</th>
-  </tr></thead>`;
 
-  let rows = computed.map((c,i) => {
-    const planned = segments[i].carbo !== null && segments[i].carbo !== '' ? segments[i].carbo : '';
-    const choIng = segments[i].carboInt || 0;
-    const choBorr = planned !== '' ? Math.max(0, Number(planned) - choIng) : '—';
-    return `<tr>
-      <td>${c.name}</td>
-      <td class="col-div calc carb">${fmt(c.carboCalc)}</td>
-      <td><input type="number" value="${planned}" placeholder="—" oninput="segments[${i}].carbo=this.value?+this.value:null;debouncedRenderAll()"></td>
-      <td class="calc">${fmt(choIng,0)}</td>
-      <td class="calc bor">${choBorr === '—' ? '—' : fmt(choBorr,0)}</td>
-    </tr>`;
-  }).join('');
-
-  document.getElementById('segNutritionTable').innerHTML = hdr + `<tbody>${rows}</tbody>`;
-}
 
 function renderFoods() {
   const foodTypes = ['barretta', 'gel', 'caramelle', 'panino', 'banana', 'altro'];
@@ -1481,105 +1461,126 @@ function renderNutrition(meta) {
   
   document.getElementById('nutGrid').innerHTML = html;
   document.getElementById('nutGrid').className = `nut-grid ${nutritionView}-view`;
-  
-  // Render caffeine bars
-  const caffeineHtml = computed.map((c, i) => {
-    const seg = segments[i];
-    let totalCaffeineInSegment = 0;
-    if (seg.foodItems && seg.foodItems.length > 0) {
-      seg.foodItems.forEach(item => {
-        const food = foods[item.foodIndex];
-        if (food && food.caffeineMg > 0) {
-          totalCaffeineInSegment += food.caffeineMg;
-        }
-      });
-    }
-    
-    // Max caffeine for scaling (find the max across all segments)
-    const maxCaffeine = computed.reduce((max, co, idx) => {
-      let totalCaff = 0;
-      if (segments[idx].foodItems) {
-        segments[idx].foodItems.forEach(item => {
-          const food = foods[item.foodIndex];
-          if (food && food.caffeineMg > 0) totalCaff += food.caffeineMg;
-        });
-      }
-      return Math.max(max, totalCaff);
-    }, 0) || 1;
-    
-    const barHeightPct = (totalCaffeineInSegment / maxCaffeine) * 100;
-    const color = ['#f59e0b', '#06b6d4', '#8b5cf6', '#ec4899', '#f43f5e', '#10b981', '#00e5ff', '#7c3aed'][i % 8];
-    
-    return `
-      <div style="padding:16px; background:var(--surface); border-radius:10px; border:1px solid var(--border); display:flex; flex-direction:column; justify-content:space-between;">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px;">
-          <div>
-            <div style="font-weight:600; color:var(--text);">${c.name}</div>
-            <div style="font-size:0.75rem; color:var(--text-muted);">${c.km} km · ${fmtDuration(c.segMin)}</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:1.3rem; font-weight:700; font-family:'JetBrains Mono',monospace; color:${color};">${totalCaffeineInSegment}</div>
-            <div style="font-size:0.7rem; color:var(--text-muted);">mg</div>
-          </div>
-        </div>
-        <div style="width:100%; height:20px; background:var(--surface2); border-radius:4px; overflow:hidden; border:1px solid var(--border);">
-          <div style="width:${barHeightPct}%; height:100%; background:${color}; transition:width 0.3s ease;"></div>
-        </div>
-      </div>
-    `;
-  }).join('');
-  
-  // Render the caffeine section title with icon first
-  let caffeineSection = '<div style="margin-top:40px; margin-bottom:16px; display:flex; align-items:center; gap:12px;"><span style="color:var(--text-muted); font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; font-weight:600; flex:1;">☕ Caffeina Assunta</span><span onclick="showCaffeineFormula()" style="cursor:pointer; color:var(--accent); font-weight:600; font-size:1.2rem;">ℹ️</span><div style="flex:1; height:1px; background:linear-gradient(90deg, var(--border), transparent);"></div></div>';
-  
-  document.getElementById('caffeineGrid').innerHTML = caffeineSection + '<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(250px, 1fr)); gap:16px;">' + (caffeineHtml || '<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted); font-style:italic;">Aggiungi caffeina agli alimenti nella sezione Solidi</div>') + '</div>';
 }
 
 function renderBottles(meta) {
-  const grIper  = cfg.bottleVol - cfg.osmGr;
-  const pctIper = cfg.osmGr / grIper;
-  const osmPct  = cfg.osmGr / cfg.bottleVol;
+  // Calculate CHO values like in recalc()
+  const totalTime = computed.reduce((sum, c) => sum + c.segMin, 0) / 60;
+  const totalChoCalc = cfg.carbPerHour * totalTime;
+  const totalChoFood = foods.reduce((sum, f) => {
+    const qty = f.qty || 0;
+    const grCho = f.grCho || 0;
+    const pctCho = f.pctCho || 100;
+    return sum + (qty * grCho * pctCho / 100);
+  }, 0);
+  const choLiquid = totalChoCalc - totalChoFood;
+  
+  const borr1Cho = Number(cfg.choPerBottle) || 0;
+  const borrIperCho = Math.max(0, choLiquid - borr1Cho);
 
+  // Use correct values for each bottle type
+  const easyCho = cfg.choPerBottle || 0;  // Borraccia Easy uses CHO per Borraccia
+  const iperCho = borrIperCho;            // Borraccia Iper uses 🔥 Borraccia Iperconcentrata
+
+  const grIper  = cfg.bottleVol - iperCho;
+  const pctIper = iperCho / grIper;
+  const osmPct  = easyCho / cfg.bottleVol;
+
+  // Configuration cards (always shown)
   document.getElementById('bottleConfig').innerHTML = `
-    <div class="bottle-card">
-      <h4>⚗️ Borraccia Iper (concentrata)</h4>
-      <div class="bc-row"><span class="bc-label">Volume totale</span><span class="bc-val">${cfg.bottleVol} ml</span></div>
-      <div class="bc-row"><span class="bc-label">Gr Maltodestrina</span><span class="bc-val amber">${cfg.osmGr} g</span></div>
-      <div class="bc-row"><span class="bc-label">Gr acqua (iper)</span><span class="bc-val purple">${grIper} g</span></div>
-      <div class="bc-row"><span class="bc-label">Rapporto malto/acqua</span><span class="bc-val">${fmt(pctIper,3)}</span></div>
-    </div>
     <div class="bottle-card">
       <h4>💧 Borraccia Easy (osmotica)</h4>
       <div class="bc-row"><span class="bc-label">Volume totale</span><span class="bc-val">${cfg.bottleVol} ml</span></div>
-      <div class="bc-row"><span class="bc-label">Gr Maltodestrina</span><span class="bc-val green">${cfg.osmGr} g</span></div>
+      <div class="bc-row"><span class="bc-label">Gr Maltodestrina</span><span class="bc-val green">${fmt(easyCho, 0)} g</span></div>
       <div class="bc-row"><span class="bc-label">% Osm</span><span class="bc-val">${fmt(osmPct*100,2)}%</span></div>
     </div>
     <div class="bottle-card">
-      <h4>📊 Macro Nutrienti</h4>
-      <div class="bc-row"><span class="bc-label">Sciroppo sugar %</span><span class="bc-val amber">${cfg.siroSugar}%</span></div>
-      <div class="bc-row"><span class="bc-label">Caramelle sugar %</span><span class="bc-val">75%</span></div>
+      <h4>⚗️ Borraccia Iper (concentrata)</h4>
+      <div class="bc-row"><span class="bc-label">Volume totale</span><span class="bc-val">${cfg.bottleVol} ml</span></div>
+      <div class="bc-row"><span class="bc-label">Gr Maltodestrina</span><span class="bc-val amber">${fmt(iperCho, 0)} g</span></div>
+      <div class="bc-row"><span class="bc-label">Gr acqua (iper)</span><span class="bc-val purple">${fmt(grIper, 0)} g</span></div>
+      <div class="bc-row"><span class="bc-label">Rapporto malto/acqua</span><span class="bc-val">${fmt(pctIper,3)}</span></div>
     </div>
   `;
 
-  // Per-segment bottle cards
-  let html = computed.map((c,i) => {
-    const hasConsum = c.consum !== null;
-    return `
-      <div class="bottle-card" style="animation-delay:${i*0.05}s">
-        <h4>💧 ${c.name} — ${c.km} km</h4>
-        <div class="bc-row"><span class="bc-label">Malto in borraccia</span><span class="bc-val green">${segments[i].malto} g</span></div>
-        <div class="bc-row"><span class="bc-label">Fraz. borraccia (U)</span><span class="bc-val">${fmt(c.borFrac,3)}</span></div>
-        <div class="bc-row"><span class="bc-label">Fill iper (AA)</span><span class="bc-val purple">${fmt(c.fillIper,3)}</span></div>
-        ${hasConsum ? `
-        <div class="bc-row"><span class="bc-label">Consumo borracce</span><span class="bc-val amber">${c.consum}</span></div>
-        <div class="bc-row"><span class="bc-label">Refill iper</span><span class="bc-val">${fmt(c.refill,3)}</span></div>
-        <div class="bc-row"><span class="bc-label">Refill H₂O</span><span class="bc-val">${fmt(c.refillH2O,3)}</span></div>
-        <div class="bc-row"><span class="bc-label">ml iper consumati</span><span class="bc-val green">${fmt(c.refillMl,0)} ml</span></div>
-        <div class="bc-row"><span class="bc-label">ml H₂O consumati</span><span class="bc-val">${fmt(c.refillH2OmL,0)} ml</span></div>
-        ` : '<div class="bc-row"><span class="bc-label" style="color:var(--accent3)">Nessun consumo registrato</span></div>'}
-      </div>`;
-  }).join('');
+  let html;
+  if (bottleView === 'compact') {
+    // Compact view: table with key data
+    let cumConsum = 0;
+    const tableRows = computed.map((c,i) => {
+      const seg = segments[i];
+      const hasConsum = c.consum !== null;
+      cumConsum += c.consum;
+      const prevCum = cumConsum - c.consum;
+      const needsRefill = Math.floor(cumConsum) > Math.floor(prevCum) && iperCho > 0;
+      return `
+        <tr>
+          <td style="padding:12px; border-bottom:1px solid var(--border); font-weight:600;">${c.name}</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center;">${c.km} km</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent5); font-weight:600;">${segments[i].malto} g</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent); font-weight:600;">${fmt(c.borFrac,3)}</td>
+          ${hasConsum ? `
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent4); font-weight:600;">${fmt(c.consum, 1)}</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--blue); font-weight:600;">${fmt((c.consum * cfg.bottleVol) / 1000, 2)} l</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent2); font-weight:600;">${fmt(c.refillMl,0)} ml</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent2); font-weight:600;">${fmt(c.refillH2OmL,0)} ml</td>
+          <td style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:${needsRefill ? 'var(--warning)' : 'var(--accent3)'}; font-weight:600;">${needsRefill ? '⚠️ Sì' : '—'}</td>
+          ` : `
+          <td colspan="5" style="padding:12px; border-bottom:1px solid var(--border); text-align:center; color:var(--accent3); font-style:italic;">Nessun consumo registrato</td>
+          `}
+        </tr>
+      `;
+    }).join('');
+    
+    html = `
+      <div class="table-scroll">
+        <table style="width:100%; background:var(--surface); border-radius:12px; overflow:hidden; border-collapse:collapse;">
+          <thead>
+            <tr style="background:var(--surface2);">
+              <th style="padding:16px; text-align:left; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Tratto</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Km</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Malto</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Fraz. Borr</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Consumo</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Consumo ml</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Iper Cons</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">H₂O Cons</th>
+              <th style="padding:16px; text-align:center; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-size:0.8rem;">Refill</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      </div>
+    `;
+  } else {
+    // Cards view: detailed cards
+    let cumConsum = 0;
+    html = computed.map((c,i) => {
+      const hasConsum = c.consum !== null;
+      cumConsum += c.consum;
+      const prevCum = cumConsum - c.consum;
+      const needsRefill = Math.floor(cumConsum) > Math.floor(prevCum) && iperCho > 0;
+      return `
+        <div class="bottle-card" style="animation-delay:${i*0.05}s">
+          <h4>💧 ${c.name} — ${c.km} km</h4>
+          <div class="bc-row"><span class="bc-label">Malto in borraccia</span><span class="bc-val green">${segments[i].malto} g</span></div>
+          ${hasConsum ? `
+          <div class="bc-row"><span class="bc-label">Consumo borracce</span><span class="bc-val amber">${fmt(c.consum, 1)}</span></div>
+          <div class="bc-row"><span class="bc-label">Consumo ml</span><span class="bc-val blue">${fmt((c.consum * cfg.bottleVol) / 1000, 2)} l</span></div>
+          ${needsRefill ? `
+          <div class="bc-row" style="background:var(--warning-bg); border:1px solid var(--warning); border-radius:6px; padding:8px; margin:8px 0; cursor:pointer;" onclick="showRefillModal(${i})">
+            <span class="bc-label" style="color:var(--warning); font-weight:600;">⚠️ Refill necessario</span>
+          </div>
+          ` : ''}
+          ` : '<div class="bc-row"><span class="bc-label" style="color:var(--accent3)">Nessun consumo registrato</span></div>'}
+        </div>`;
+    }).join('');
+  }
+  
   document.getElementById('bottleCards').innerHTML = html;
+  document.getElementById('bottleCards').className = `bottle-row ${bottleView}-view`;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1771,20 +1772,77 @@ function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + name).classList.add('active');
   document.querySelector(`[onclick="switchTab('${name}')"]`).classList.add('active');
+  
+  // Update view buttons based on tab
+  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+  if (name === 'nutrition') {
+    document.querySelector(`[onclick="setNutritionView('${nutritionView}')"]`).classList.add('active');
+  } else if (name === 'bottles') {
+    document.querySelector(`[onclick="setBottleView('${bottleView}')"]`).classList.add('active');
+    document.getElementById('bottleCards').className = `bottle-row ${bottleView}-view`;
+  }
+  
   if (name === 'charts') setTimeout(renderCharts, 100);
 }
 
 function setNutritionView(view) {
   nutritionView = view;
-  document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-  document.querySelector(`[onclick="setNutritionView('${view}')"]`).classList.add('active');
-  renderAllWithCharts();
+  // Only update if we're on the nutrition tab
+  if (document.getElementById('tab-nutrition').classList.contains('active')) {
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[onclick="setNutritionView('${view}')"]`).classList.add('active');
+    renderAll();
+  }
+}
+
+function setBottleView(view) {
+  bottleView = view;
+  // Only update if we're on the bottles tab
+  if (document.getElementById('tab-bottles').classList.contains('active')) {
+    document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[onclick="setBottleView('${view}')"]`).classList.add('active');
+    document.getElementById('bottleCards').className = `bottle-row ${view}-view`;
+    renderAll();
+  }
 }
 
 // ═══════════════════════════════════════════════════════
 // MODAL DIALOG — Osmolarità
 // ═══════════════════════════════════════════════════════
 function showOsmDialog() {
+  const levels = [
+    { label: '🟢 Leggera', osm: 4, note: 'Meno concentrata, più tollerabile' },
+    { label: '🟡 Standard', osm: 6, note: 'Bilanciata, consigliata' },
+    { label: '🔴 Forte', osm: 8, note: 'Più concentrata, ottima assimilazione' }
+  ];
+  
+  const tableHtml = `
+    <table class="osm-table">
+      <thead>
+        <tr>
+          <th>Livello</th>
+          <th>Osm %</th>
+          <th>Gr CHO<br/>(${cfg.bottleVol}ml)</th>
+          <th>Caratteristica</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${levels.map(level => {
+          const cho = Math.round((level.osm / 100) * cfg.bottleVol);
+          return `
+            <tr>
+              <td class="label">${level.label}</td>
+              <td class="value">${level.osm}%</td>
+              <td class="value">${cho} g</td>
+              <td class="note">${level.note}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+  
+  document.getElementById('osmTableContainer').innerHTML = tableHtml;
   document.getElementById('osmModal').classList.add('active');
 }
 
@@ -1839,6 +1897,59 @@ function showSolidiDialog() {
 
 function closeSolidiDialog() {
   document.getElementById('solidiModal').classList.remove('active');
+}
+
+function showRefillModal(segmentIndex) {
+  const c = computed[segmentIndex];
+  const modal = document.getElementById('refillModal');
+  const content = document.getElementById('refillContent');
+  
+  // Recalculate iperCho
+  const totalTime = computed.reduce((sum, c) => sum + c.segMin, 0) / 60;
+  const totalChoCalc = cfg.carbPerHour * totalTime;
+  const totalChoFood = foods.reduce((sum, f) => {
+    const qty = f.qty || 0;
+    const grCho = f.grCho || 0;
+    const pctCho = f.pctCho || 100;
+    return sum + (qty * grCho * pctCho / 100);
+  }, 0);
+  const choLiquid = totalChoCalc - totalChoFood;
+  const borr1Cho = Number(cfg.choPerBottle) || 0;
+  const iperCho = Math.max(0, choLiquid - borr1Cho);
+  
+  // Calculate cumulative consumption up to this segment
+  let cumConsum = 0;
+  for (let j = 0; j <= segmentIndex; j++) {
+    cumConsum += computed[j].consum;
+  }
+  
+  const refillFraction = cumConsum - Math.floor(cumConsum);
+  const choNecessario = refillFraction * cfg.choPerBottle;
+  const volumeIper = iperCho > 0 ? (choNecessario * cfg.bottleVol) / iperCho : 0;
+  const acqua = cfg.bottleVol - volumeIper;
+  
+  let html = `
+    <div style="padding:16px; background:var(--surface); border-radius:10px; border:1px solid var(--border);">
+      <h4 style="margin:0 0 12px 0; color:var(--accent);">📋 Dettagli Refill dopo ${c.name}</h4>
+      <div style="display:grid; gap:8px; font-size:0.9rem;">
+        <div><strong>Consumo cumulativo:</strong> ${fmt(cumConsum, 1)} borracce</div>
+        <div><strong>Frazione da refillare:</strong> ${fmt(refillFraction, 2)} borracce</div>
+        <div><strong>CHO necessario:</strong> ${fmt(choNecessario, 0)} g</div>
+        <div style="margin-top:8px; padding:8px; background:var(--surface2); border-radius:6px;">
+          <strong>💧 Preparazione:</strong><br>
+          ${fmt(volumeIper, 0)} ml borraccia iperconcentrata<br>
+          + ${fmt(acqua, 0)} ml acqua
+        </div>
+      </div>
+    </div>
+  `;
+  
+  content.innerHTML = html;
+  modal.style.display = 'flex';
+}
+
+function closeRefillModal() {
+  document.getElementById('refillModal').style.display = 'none';
 }
 
 function updateCarbReminder() {
